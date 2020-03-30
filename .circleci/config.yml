@@ -20,7 +20,6 @@ jobs:
       # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
       TERM: dumb
-      CI: 1
 
     steps:
       - checkout
