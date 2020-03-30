@@ -23,17 +23,19 @@ lazy val publishSettings = List(
 lazy val mtgjson = (project in file("mtgjson"))
   .settings(publishSettings)
   .settings(
+    parallelExecution in Test := false,
     libraryDependencies ++= Seq(
+      "org.typelevel"  %% "cats-core"        % catsVersion,
+      "org.typelevel"  %% "cats-effect"      % catsEffectVersion,
       "com.beachape"   %% "enumeratum"       % enumeratumVersion,
       "io.circe"       %% "circe-core"       % circeVersion,
       "io.circe"       %% "circe-generic"    % circeVersion,
+      "io.circe"       %% "circe-parser"     % circeVersion,
       "com.beachape"   %% "enumeratum-circe" % enumeratumCirceVersion,
       "org.scalatest"  %% "scalatest"        % scalatestVersion % Test,
-      "io.circe"       %% "circe-parser"     % circeVersion % Test,
-      "org.typelevel"  %% "cats-core"        % catsVersion % Test,
-      "org.typelevel"  %% "cats-effect"      % catsEffectVersion % Test,
       "com.gaborpihaj" %% "fetchfile"        % "0.2.0" % Test
-    )
+    ),
+    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
   )
 
 lazy val root = (project in file("."))

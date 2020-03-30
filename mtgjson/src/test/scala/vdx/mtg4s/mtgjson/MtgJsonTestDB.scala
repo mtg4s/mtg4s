@@ -1,21 +1,22 @@
 package vdx.mtg4s.mtgjson
 
-import cats.syntax.functor._
-import cats.instances.option._
 import cats.effect.{Blocker, IO, Resource}
-import vdx.fetchfile.{Downloader, HttpURLConnectionBackend, Progress}
+import cats.instances.option._
+import cats.syntax.functor._
+import fs2.Pipe
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import vdx.fetchfile.{Downloader, HttpURLConnectionBackend, MonotonicClock, Progress}
 
 import scala.concurrent.ExecutionContext
 
 import java.io.{File, FileOutputStream}
 import java.net.URL
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.BeforeAndAfterAll
-import vdx.fetchfile.MonotonicClock
-import fs2.Pipe
 
-abstract class MtgJsonSpec extends AnyFlatSpec with BeforeAndAfterAll {
+abstract class MtgJsonTestDB extends AnyFlatSpec with BeforeAndAfterAll {
   override def beforeAll(): Unit = ensureMtgJsonFileExists()
+
+  def allPringtingsJson = new File("AllPrintings.json")
 
   def ensureMtgJsonFileExists(): Unit = {
     val outFile = new File("AllPrintings.json")
