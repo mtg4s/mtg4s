@@ -13,6 +13,10 @@ val catsEffectVersion = "2.1.2"
 val enumeratumVersion = "1.5.13"
 val enumeratumCirceVersion = "1.5.23"
 val circeVersion = "0.12.3"
+val shapelessVersion = "2.3.3"
+val monocleVersion = "2.0.3"
+val kantanCsvVersion = "0.6.0"
+
 val scalatestVersion = "3.1.1"
 
 lazy val publishSettings = List(
@@ -22,12 +26,36 @@ lazy val publishSettings = List(
 )
 
 lazy val defaultSettings = Seq(
-  addCompilerPlugin(scalafixSemanticdb)
+  addCompilerPlugin(scalafixSemanticdb),
+  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 )
 
-lazy val mtgjson = (project in file("mtgjson"))
-  .settings(publishSettings)
+lazy val core = (project in file("core"))
   .settings(
+    publishSettings,
+    defaultSettings,
+    libraryDependencies ++= Seq(
+      "com.chuusai" %% "shapeless" % shapelessVersion
+    )
+  )
+
+lazy val inventory = (project in file("inventory"))
+  .settings(
+    publishSettings,
+    defaultSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel"              %% "cats-core"    % catsVersion,
+      "org.typelevel"              %% "cats-effect"  % catsEffectVersion,
+      "com.nrinaudo"               %% "kantan.csv"   % kantanCsvVersion,
+      "com.github.julien-truffaut" %% "monocle-core" % monocleVersion,
+      "org.scalatest"              %% "scalatest"    % scalatestVersion % Test
+    )
+  )
+  .dependsOn(core)
+
+lazy val mtgjson = (project in file("mtgjson"))
+  .settings(
+    publishSettings,
     defaultSettings,
     parallelExecution in Test := false,
     libraryDependencies ++= Seq(
@@ -40,14 +68,17 @@ lazy val mtgjson = (project in file("mtgjson"))
       "com.beachape"   %% "enumeratum-circe" % enumeratumCirceVersion,
       "org.scalatest"  %% "scalatest"        % scalatestVersion % Test,
       "com.gaborpihaj" %% "fetchfile"        % "0.2.0" % Test
-    ),
-    addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
+    )
   )
 
 lazy val root = (project in file("."))
   .settings(
     skip in publish := true
   )
-  .aggregate(mtgjson)
+  .aggregate(
+    mtgjson,
+    core,
+    inventory
+  )
 
 addCommandAlias("prePush", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt ;clean ;test")
