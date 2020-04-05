@@ -1,5 +1,7 @@
 package vdx.mtg4s.mtgjson
 
+import cats.instances.int._
+import cats.syntax.eq._
 import io.circe._
 import io.circe.parser.parse
 
@@ -13,7 +15,7 @@ trait CirceSpec {
     result.swap.getOrElse(DecodingFailure("", List.empty)) match {
       case d: DecodingFailure if d.history.length > 1 =>
         println(HCursor.fromJson(parsed).replay(d.history.tail).focus.get)
-      case d: DecodingFailure if d.history.length == 1 =>
+      case d: DecodingFailure if d.history.length === 1 =>
         println(HCursor.fromJson(parsed).replayOne(d.history(0)).focus.get)
       case _ => ()
     }

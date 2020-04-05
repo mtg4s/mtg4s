@@ -3,19 +3,19 @@ package vdx.mtg4s.mtgjson
 import cats.MonadError
 import cats.effect.Sync
 import cats.syntax.applicativeError._
+import io.circe.parser.decode
 import io.circe.{
   Decoder,
   Error => CirceError,
   DecodingFailure => CirceDecodingFailure,
   ParsingFailure => CirceParsingFailure
 }
-import io.circe.parser.decode
 import vdx.mtg4s.mtgjson.MtgJson.Error
+
+import scala.io.Source
 
 import java.io.File
 import java.io.FileNotFoundException
-
-import scala.io.Source
 
 /**
  * An interface to safely acquire an in memory instance of the MTGJson database.

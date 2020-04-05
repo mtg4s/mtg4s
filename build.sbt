@@ -4,6 +4,7 @@ ThisBuild / name := "mtg4s"
 ThisBuild / scalaVersion := "2.13.1"
 ThisBuild / organization := "com.gaborpihaj"
 ThisBuild / dynverSonatypeSnapshots := true
+ThisBuild / scalafixDependencies += "com.nequissimus" %% "sort-imports" % "0.3.2"
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
@@ -20,9 +21,14 @@ lazy val publishSettings = List(
   sonatypeProjectHosting := Some(GitHubHosting("voidcontext", "mtg4s", "gabor.pihaj@gmail.com"))
 )
 
+lazy val defaultSettings = Seq(
+  addCompilerPlugin(scalafixSemanticdb)
+)
+
 lazy val mtgjson = (project in file("mtgjson"))
   .settings(publishSettings)
   .settings(
+    defaultSettings,
     parallelExecution in Test := false,
     libraryDependencies ++= Seq(
       "org.typelevel"  %% "cats-core"        % catsVersion,
@@ -44,4 +50,4 @@ lazy val root = (project in file("."))
   )
   .aggregate(mtgjson)
 
-addCommandAlias("prePush", ";scalafmtAll ;scalafmtSbt ;clean ;test")
+addCommandAlias("prePush", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt ;clean ;test")

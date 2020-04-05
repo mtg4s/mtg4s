@@ -1,9 +1,9 @@
 package vdx.mtg4s.mtgjson.raw
 
+import enumeratum.EnumEntry.{Lowercase, Snakecase}
+import enumeratum._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import enumeratum._
-import enumeratum.EnumEntry.{Lowercase, Snakecase}
 import vdx.mtg4s.mtgjson.raw.Card._
 
 import java.util.UUID

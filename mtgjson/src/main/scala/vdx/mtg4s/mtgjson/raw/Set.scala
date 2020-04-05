@@ -1,9 +1,9 @@
 package vdx.mtg4s.mtgjson.raw
 
+import enumeratum.EnumEntry.Snakecase
+import enumeratum._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import enumeratum._
-import enumeratum.EnumEntry.Snakecase
 import vdx.mtg4s.mtgjson.raw.Set.SetType
 
 import java.time.LocalDate
