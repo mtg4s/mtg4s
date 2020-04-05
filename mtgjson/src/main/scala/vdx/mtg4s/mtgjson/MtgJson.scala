@@ -13,11 +13,21 @@ import io.circe.parser.decode
 import vdx.mtg4s.mtgjson.MtgJson.Error
 
 import java.io.File
-
-import scala.io.Source
 import java.io.FileNotFoundException
 
+import scala.io.Source
+
+/**
+ * An interface to safely acquire an in memory instance of the MTGJson database.
+ *
+ * The representation is configurable through the Repr type parameter, so that it can
+ * be optimised to the task (e.g. use a subset of the fields to save memory, etc)
+ */
 trait MtgJson[F[_], Repr] {
+
+  /**
+   * Suspends the loading of the database in the given `F`
+   */
   def load(): F[Either[Error, Repr]]
 }
 
@@ -28,12 +38,20 @@ object MtgJson {
   final case class DecodingFailure(message: String) extends Error
   final case class FileNotFound(message: String) extends Error
 
+  /**
+   * Creates an instance of `MtgJson[F]`
+   */
   def apply[F[_]: Sync: MonadError[*[_], Throwable], Repr: Decoder](mtgjson: File): MtgJson[F, Repr] =
     new MtgJson[F, Repr] {
+
       override def load(): F[Either[Error, Repr]] =
-        Sync[F].delay(decode[Repr](Source.fromFile(mtgjson).mkString).left.map(circeErrorToMtgJsonError)).recover {
-          case e: FileNotFoundException => Left(FileNotFound(e.getMessage()))
-        }
+        Sync[F]
+          .delay(
+            decode[Repr](Source.fromFile(mtgjson).mkString).left.map(circeErrorToMtgJsonError)
+          )
+          .recover {
+            case e: FileNotFoundException => Left(FileNotFound(e.getMessage()))
+          }
 
       private def circeErrorToMtgJsonError(error: CirceError): Error = error match {
         case e: CirceParsingFailure  => ParsingFailure(e.getMessage())
