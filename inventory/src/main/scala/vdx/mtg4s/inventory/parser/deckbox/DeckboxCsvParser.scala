@@ -16,30 +16,46 @@ import vdx.mtg4s.inventory.parser.Parser._
 
 object DeckboxCsvParser {
 
+  /**
+   * Creates a Parser that can parse inventory files created on deckbox.org
+   */
   def apply[F[_]: Sync, Repr](db: CardDB[F, Repr])(implicit G: Getter[Repr, MtgJsonId]): Parser[F] = new Parser[F] {
     override def parse(raw: String): F[ParserResult[Inventory]] =
       Sync[F]
         .delay(raw.trim.asCsvReader[RawDeckboxCard](rfc.withHeader(true)))
         .flatMap(
           _.foldLeft[Chain[F[ParserResult[InventoryItem]]]](Chain.empty) { (chain, result) =>
+            // +1 because of the header and +1 because line numbering in messages is not zero based
+            implicit val pos: Pos = Pos(chain.length + 2)
             chain ++ Chain.one(
               result.fold(
-                _ => errorResultF[F, InventoryItem](ParsingError("Error parsing line")),
-                item => findOrParsingError(CardName(item.name), Set("foobar"), item.count)
+                e =>
+                  errorResultF[F, InventoryItem](
+                    ParsingError(s"Error parsing/decoding line ${pos.line}: ${e.toString}")
+                  ),
+                item => findOrParsingError(CardName(item.name), Set(item.edition), item.count)
               )
             )
           }.traverse(identity)
             .map(_.traverse(identity))
         )
 
-    private[this] def findOrParsingError(name: CardName, set: Set, count: Int): F[ParserResult[InventoryItem]] =
+    private[this] def findOrParsingError(name: CardName, set: Set, count: Int)(
+      implicit pos: Pos
+    ): F[ParserResult[InventoryItem]] =
       db.find(name, set)
         .map(
-          _.toRight(oneError(ParsingError("Cannot find card in db")))
-            .map(r => InventoryItem(G.get(r), count))
+          _.toRight(
+            oneError(CardNotFoundError(s"Cannot find card in the database: ${name} (${set}) at line ${pos.line}"))
+          ).map(r => InventoryItem(G.get(r), count))
         )
   }
 
+  private[deckbox] final case class Pos(line: Long)
+
+  /**
+   * Representation of the single line of the deckbox csv
+   */
   private[deckbox] final case class RawDeckboxCard(
     count: Int,
     name: String,

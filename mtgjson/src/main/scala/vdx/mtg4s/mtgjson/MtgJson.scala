@@ -1,6 +1,7 @@
 package vdx.mtg4s.mtgjson
 
 import cats.MonadError
+import cats.effect.Resource
 import cats.effect.Sync
 import cats.syntax.applicativeError._
 import io.circe.parser.decode
@@ -45,10 +46,14 @@ object MtgJson {
     new MtgJson[F, Repr] {
 
       override def load(): F[Either[Error, Repr]] =
-        Sync[F]
-          .delay(
-            decode[Repr](Source.fromFile(mtgjson).mkString).left.map(circeErrorToMtgJsonError)
-          )
+        Resource
+          .fromAutoCloseable(Sync[F].delay(Source.fromFile(mtgjson)))
+          .use { mtgjsonResource =>
+            Sync[F]
+              .delay(
+                decode[Repr](mtgjsonResource.mkString).left.map(circeErrorToMtgJsonError)
+              )
+          }
           .recover {
             case e: FileNotFoundException => Left(FileNotFound(e.getMessage()))
           }

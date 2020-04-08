@@ -18,6 +18,8 @@ val monocleVersion = "2.0.3"
 val kantanCsvVersion = "0.6.0"
 
 val scalatestVersion = "3.1.1"
+val scalatestScalacheckVersion = "3.1.1.1"
+val scalaCheckVersion = "1.14.3"
 
 lazy val publishSettings = List(
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
@@ -35,7 +37,10 @@ lazy val core = (project in file("core"))
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
-      "com.chuusai" %% "shapeless" % shapelessVersion
+      "com.chuusai"       %% "shapeless"       % shapelessVersion,
+      "org.scalatest"     %% "scalatest"       % scalatestVersion % Test,
+      "org.scalatestplus" %% "scalacheck-1-14" % scalatestScalacheckVersion % Test,
+      "org.scalacheck"    %% "scalacheck"      % scalaCheckVersion % Test
     )
   )
 
@@ -44,14 +49,19 @@ lazy val inventory = (project in file("inventory"))
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
-      "org.typelevel"              %% "cats-core"    % catsVersion,
-      "org.typelevel"              %% "cats-effect"  % catsEffectVersion,
-      "com.nrinaudo"               %% "kantan.csv"   % kantanCsvVersion,
-      "com.github.julien-truffaut" %% "monocle-core" % monocleVersion,
-      "org.scalatest"              %% "scalatest"    % scalatestVersion % Test
+      "org.typelevel"              %% "cats-core"          % catsVersion,
+      "org.typelevel"              %% "cats-effect"        % catsEffectVersion,
+      "com.nrinaudo"               %% "kantan.csv"         % kantanCsvVersion,
+      "com.github.julien-truffaut" %% "monocle-core"       % monocleVersion,
+      "org.scalatest"              %% "scalatest"          % scalatestVersion % Test,
+      "org.scalatestplus"          %% "scalacheck-1-14"    % scalatestScalacheckVersion % Test,
+      "org.scalacheck"             %% "scalacheck"         % scalaCheckVersion % Test,
+      "io.chrisdavenport"          %% "cats-scalacheck"    % "0.2.0" % Test,
+      "com.nrinaudo"               %% "kantan.csv-generic" % kantanCsvVersion % Test,
+      "org.typelevel"              %% "claimant"           % "0.1.1"
     )
   )
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val mtgjson = (project in file("mtgjson"))
   .settings(
