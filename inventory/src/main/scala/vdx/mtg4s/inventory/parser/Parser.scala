@@ -2,6 +2,7 @@ package vdx.mtg4s.inventory.parser
 
 import cats.Applicative
 import cats.data.NonEmptyList
+import cats.kernel.Eq
 import vdx.mtg4s.inventory.Inventory
 import vdx.mtg4s.inventory.parser.Parser.ParserResult
 
@@ -25,6 +26,10 @@ object Parser {
   sealed trait ParserError
   final case class ParsingError(message: String) extends ParserError
   final case class CardNotFoundError(message: String) extends ParserError
+
+  object ParserError {
+    implicit val eq: Eq[ParserError] = Eq.fromUniversalEquals
+  }
 
   private[parser] def oneError[A](error: ParserError): NonEmptyList[ParserError] =
     NonEmptyList.one(error)

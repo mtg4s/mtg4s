@@ -3,6 +3,7 @@ package vdx.mtg4s.inventory.parser.deckbox
 import cats.data.Chain
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.syntax.eq._
 import kantan.csv._
 import kantan.csv.generic._
 import kantan.csv.ops._
@@ -12,6 +13,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.claimant.Claim
+import vdx.mtg4s.MtgSet.SetName
 import vdx.mtg4s._
 import vdx.mtg4s.inventory.InventoryItem
 import vdx.mtg4s.inventory.parser.Parser.CardNotFoundError
@@ -21,18 +23,24 @@ import vdx.mtg4s.inventory.parser.deckbox.Generators._
 import java.util.UUID
 @SuppressWarnings(Array("scalafix:DisableSyntax.==")) // For nice Claimant messages
 class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {
-  case class Card(name: String, set: String, id: MtgJsonId)
+  case class Card(name: String, set: SetName, id: MtgJsonId)
 
   val cards: Map[String, Card] = Map(
-    "Primeval Titan" -> Card("Primeval Titan", "Iconic Masters", MtgJsonId(UUID.randomUUID())),
-    "Snapcaster Mage" -> Card("Snapcaster Mage", "Innistrad", MtgJsonId(UUID.randomUUID())),
-    "Lightning Bolt" -> Card("Lightning Bolt", "Masters 25", MtgJsonId(UUID.randomUUID())),
-    "Karn, the Great Creator" -> Card("Karn, the Great Creator", "War of the Spark", MtgJsonId(UUID.randomUUID()))
+    "Primeval Titan" -> Card("Primeval Titan", SetName("Iconic Masters"), MtgJsonId(UUID.randomUUID())),
+    "Snapcaster Mage" -> Card("Snapcaster Mage", SetName("Innistrad"), MtgJsonId(UUID.randomUUID())),
+    "Lightning Bolt" -> Card("Lightning Bolt", SetName("Masters 25"), MtgJsonId(UUID.randomUUID())),
+    "Karn, the Great Creator" -> Card(
+      "Karn, the Great Creator",
+      SetName("War of the Spark"),
+      MtgJsonId(UUID.randomUUID())
+    )
   )
 
   val cardDB: CardDB[IO, Card] = new CardDB[IO, Card] {
 
-    override def find(name: CardName, set: Set): IO[Option[Card]] =
+    override def findByNameAndSetCode(name: vdx.mtg4s.CardName, setCode: MtgSet.SetCode): IO[Option[Card]] = ???
+
+    override def findByNameAndSetName(name: CardName, set: SetName): IO[Option[Card]] =
       IO.pure(cards.get(name).filter(_.set === set))
   }
 

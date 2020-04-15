@@ -9,6 +9,7 @@ import cats.syntax.traverse._
 import kantan.csv._
 import kantan.csv.ops._
 import monocle.Getter
+import vdx.mtg4s.MtgSet.SetName
 import vdx.mtg4s._
 import vdx.mtg4s.inventory._
 import vdx.mtg4s.inventory.parser.Parser
@@ -33,17 +34,17 @@ object DeckboxCsvParser {
                   errorResultF[F, InventoryItem](
                     ParsingError(s"Error parsing/decoding line ${pos.line}: ${e.toString}")
                   ),
-                item => findOrParsingError(CardName(item.name), Set(item.edition), item.count)
+                item => findOrParsingError(CardName(item.name), SetName(item.edition), item.count)
               )
             )
           }.traverse(identity)
             .map(_.traverse(identity))
         )
 
-    private[this] def findOrParsingError(name: CardName, set: Set, count: Int)(
+    private[this] def findOrParsingError(name: CardName, set: SetName, count: Int)(
       implicit pos: Pos
     ): F[ParserResult[InventoryItem]] =
-      db.find(name, set)
+      db.findByNameAndSetName(name, set)
         .map(
           _.toRight(
             oneError(CardNotFoundError(s"Cannot find card in the database: ${name} (${set}) at line ${pos.line}"))

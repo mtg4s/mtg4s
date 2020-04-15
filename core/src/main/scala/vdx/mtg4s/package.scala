@@ -17,8 +17,4 @@ package object mtg4s extends Tags {
     def apply(id: UUID): MtgJsonId = tag[MtgJsonIdTag][UUID](id)
   }
 
-  type Set = String @@ SetTag
-  object Set {
-    def apply(code: String): Set = tag[SetTag][String](code)
-  }
 }

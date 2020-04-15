@@ -58,7 +58,7 @@ lazy val inventory = (project in file("inventory"))
       "org.scalacheck"             %% "scalacheck"         % scalaCheckVersion % Test,
       "io.chrisdavenport"          %% "cats-scalacheck"    % "0.2.0" % Test,
       "com.nrinaudo"               %% "kantan.csv-generic" % kantanCsvVersion % Test,
-      "org.typelevel"              %% "claimant"           % "0.1.1"
+      "org.typelevel"              %% "claimant"           % "0.1.3"
     )
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -80,6 +80,7 @@ lazy val mtgjson = (project in file("mtgjson"))
       "com.gaborpihaj" %% "fetchfile"        % "0.2.0" % Test
     )
   )
+  .dependsOn(core)
 
 lazy val root = (project in file("."))
   .settings(
