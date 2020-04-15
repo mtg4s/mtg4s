@@ -1,7 +1,7 @@
 package vdx.mtg4s
 
 import org.scalacheck.Gen
-import vdx.mtg4s.MtgSet.SetName
+import vdx.mtg4s.SetName
 
 object Generators {
   val validCards: Gen[(CardName, List[SetName])] = Gen.oneOf(

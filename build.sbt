@@ -37,6 +37,7 @@ lazy val core = (project in file("core"))
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
+      "org.typelevel"     %% "cats-core"       % catsVersion,
       "com.chuusai"       %% "shapeless"       % shapelessVersion,
       "org.scalatest"     %% "scalatest"       % scalatestVersion % Test,
       "org.scalatestplus" %% "scalacheck-1-14" % scalatestScalacheckVersion % Test,
@@ -58,7 +59,7 @@ lazy val inventory = (project in file("inventory"))
       "org.scalacheck"             %% "scalacheck"         % scalaCheckVersion % Test,
       "io.chrisdavenport"          %% "cats-scalacheck"    % "0.2.0" % Test,
       "com.nrinaudo"               %% "kantan.csv-generic" % kantanCsvVersion % Test,
-      "org.typelevel"              %% "claimant"           % "0.1.3"
+      "org.typelevel"              %% "claimant"           % "0.1.3" % Test
     )
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -69,15 +70,16 @@ lazy val mtgjson = (project in file("mtgjson"))
     defaultSettings,
     parallelExecution in Test := false,
     libraryDependencies ++= Seq(
-      "org.typelevel"  %% "cats-core"        % catsVersion,
-      "org.typelevel"  %% "cats-effect"      % catsEffectVersion,
-      "com.beachape"   %% "enumeratum"       % enumeratumVersion,
-      "io.circe"       %% "circe-core"       % circeVersion,
-      "io.circe"       %% "circe-generic"    % circeVersion,
-      "io.circe"       %% "circe-parser"     % circeVersion,
-      "com.beachape"   %% "enumeratum-circe" % enumeratumCirceVersion,
-      "org.scalatest"  %% "scalatest"        % scalatestVersion % Test,
-      "com.gaborpihaj" %% "fetchfile"        % "0.2.0" % Test
+      "org.typelevel"              %% "cats-core"        % catsVersion,
+      "org.typelevel"              %% "cats-effect"      % catsEffectVersion,
+      "com.beachape"               %% "enumeratum"       % enumeratumVersion,
+      "com.github.julien-truffaut" %% "monocle-core"     % monocleVersion,
+      "io.circe"                   %% "circe-core"       % circeVersion,
+      "io.circe"                   %% "circe-generic"    % circeVersion,
+      "io.circe"                   %% "circe-parser"     % circeVersion,
+      "com.beachape"               %% "enumeratum-circe" % enumeratumCirceVersion,
+      "org.scalatest"              %% "scalatest"        % scalatestVersion % Test,
+      "com.gaborpihaj"             %% "fetchfile"        % "0.2.0" % Test
     )
   )
   .dependsOn(core)

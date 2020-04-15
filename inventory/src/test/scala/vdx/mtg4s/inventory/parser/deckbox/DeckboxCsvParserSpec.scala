@@ -13,40 +13,33 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.claimant.Claim
-import vdx.mtg4s.MtgSet.SetName
 import vdx.mtg4s._
-import vdx.mtg4s.inventory.InventoryItem
 import vdx.mtg4s.inventory.parser.Parser.CardNotFoundError
 import vdx.mtg4s.inventory.parser.Parser.ParsingError
 import vdx.mtg4s.inventory.parser.deckbox.Generators._
 
 import java.util.UUID
+
 @SuppressWarnings(Array("scalafix:DisableSyntax.==")) // For nice Claimant messages
 class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {
-  case class Card(name: String, set: SetName, id: MtgJsonId)
+  case class Card(name: String, set: SetName, id: UUID)
 
   val cards: Map[String, Card] = Map(
-    "Primeval Titan" -> Card("Primeval Titan", SetName("Iconic Masters"), MtgJsonId(UUID.randomUUID())),
-    "Snapcaster Mage" -> Card("Snapcaster Mage", SetName("Innistrad"), MtgJsonId(UUID.randomUUID())),
-    "Lightning Bolt" -> Card("Lightning Bolt", SetName("Masters 25"), MtgJsonId(UUID.randomUUID())),
-    "Karn, the Great Creator" -> Card(
-      "Karn, the Great Creator",
-      SetName("War of the Spark"),
-      MtgJsonId(UUID.randomUUID())
-    )
+    "Primeval Titan" -> Card("Primeval Titan", SetName("Iconic Masters"), UUID.randomUUID()),
+    "Snapcaster Mage" -> Card("Snapcaster Mage", SetName("Innistrad"), UUID.randomUUID()),
+    "Lightning Bolt" -> Card("Lightning Bolt", SetName("Masters 25"), UUID.randomUUID()),
+    "Karn, the Great Creator" -> Card("Karn, the Great Creator", SetName("War of the Spark"), UUID.randomUUID())
   )
 
-  val cardDB: CardDB[IO, Card] = new CardDB[IO, Card] {
+  val cardDB: CardDB[IO, Card, SetName] = new CardDB[IO, Card, SetName] {
 
-    override def findByNameAndSetCode(name: vdx.mtg4s.CardName, setCode: MtgSet.SetCode): IO[Option[Card]] = ???
-
-    override def findByNameAndSetName(name: CardName, set: SetName): IO[Option[Card]] =
+    override def findByNameAndSet(name: CardName, set: SetName): IO[Option[Card]] =
       IO.pure(cards.get(name).filter(_.set === set))
   }
 
-  implicit val idGetter: Getter[Card, MtgJsonId] = _.id
+  implicit val idGetter: Getter[Card, UUID] = _.id
 
-  val parser = DeckboxCsvParser[IO, Card](cardDB)
+  val parser = DeckboxCsvParser[IO, Card, UUID](cardDB)
 
   val deckboxCsvConfig = rfc.withHeader(
     "Count",
@@ -95,8 +88,8 @@ class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {
           val cardFromDb = cards(row.name)
 
           Claim(
-            parserResult.getOrElse(fail("Right value was expected but got Left")) == Chain.one(
-              InventoryItem(cardFromDb.id, row.count)
+            parserResult.getOrElse(fail("Right value was expected but got Left")) == CardList(
+              Chain.one(CardList.Card(cardFromDb.id, row.count))
             )
           )
         }

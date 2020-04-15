@@ -9,7 +9,7 @@ import vdx.mtg4s.inventory.parser.Parser.ParserResult
 /**
  * An interface to parse inventory files from different sources (deckbox, etc)
  */
-trait Parser[F[_]] {
+trait Parser[F[_], CardId] {
 
   /**
    * Parse the given string and return a validated inventory.
@@ -17,7 +17,7 @@ trait Parser[F[_]] {
    * Cards that cannot be mapped to an {{MtgJsonId}} will be treated as invalid lines and the result will be a
    * Left value with the list of errors
    */
-  def parse(raw: String): F[ParserResult[Inventory]]
+  def parse(raw: String): F[ParserResult[Inventory[CardId]]]
 }
 
 object Parser {

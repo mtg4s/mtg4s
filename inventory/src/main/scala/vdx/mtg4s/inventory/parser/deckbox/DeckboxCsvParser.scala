@@ -9,7 +9,7 @@ import cats.syntax.traverse._
 import kantan.csv._
 import kantan.csv.ops._
 import monocle.Getter
-import vdx.mtg4s.MtgSet.SetName
+import vdx.mtg4s.CardList.Card
 import vdx.mtg4s._
 import vdx.mtg4s.inventory._
 import vdx.mtg4s.inventory.parser.Parser
@@ -20,35 +20,37 @@ object DeckboxCsvParser {
   /**
    * Creates a Parser that can parse inventory files created on deckbox.org
    */
-  def apply[F[_]: Sync, Repr](db: CardDB[F, Repr])(implicit G: Getter[Repr, MtgJsonId]): Parser[F] = new Parser[F] {
-    override def parse(raw: String): F[ParserResult[Inventory]] =
+  def apply[F[_]: Sync, Repr, CardId](
+    db: CardDB[F, Repr, SetName]
+  )(implicit G: Getter[Repr, CardId]): Parser[F, CardId] = new Parser[F, CardId] {
+    override def parse(raw: String): F[ParserResult[Inventory[CardId]]] =
       Sync[F]
         .delay(raw.trim.asCsvReader[RawDeckboxCard](rfc.withHeader(true)))
         .flatMap(
-          _.foldLeft[Chain[F[ParserResult[InventoryItem]]]](Chain.empty) { (chain, result) =>
+          _.foldLeft[Chain[F[ParserResult[Card[CardId]]]]](Chain.empty) { (chain, result) =>
             // +1 because of the header and +1 because line numbering in messages is not zero based
             implicit val pos: Pos = Pos(chain.length + 2)
             chain ++ Chain.one(
               result.fold(
                 e =>
-                  errorResultF[F, InventoryItem](
+                  errorResultF[F, Card[CardId]](
                     ParsingError(s"Error parsing/decoding line ${pos.line}: ${e.toString}")
                   ),
                 item => findOrParsingError(CardName(item.name), SetName(item.edition), item.count)
               )
             )
           }.traverse(identity)
-            .map(_.traverse(identity))
+            .map(_.traverse(identity).map(CardList(_)))
         )
 
     private[this] def findOrParsingError(name: CardName, set: SetName, count: Int)(
       implicit pos: Pos
-    ): F[ParserResult[InventoryItem]] =
-      db.findByNameAndSetName(name, set)
+    ): F[ParserResult[Card[CardId]]] =
+      db.findByNameAndSet(name, set)
         .map(
           _.toRight(
             oneError(CardNotFoundError(s"Cannot find card in the database: ${name} (${set}) at line ${pos.line}"))
-          ).map(r => InventoryItem(G.get(r), count))
+          ).map(r => Card(G.get(r), count))
         )
   }
 
