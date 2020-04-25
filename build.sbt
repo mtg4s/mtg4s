@@ -85,6 +85,19 @@ lazy val mtgjson = (project in file("modules/mtgjson"))
   )
   .dependsOn(core)
 
+lazy val terminal = (project in file("modules/terminal"))
+  .settings(
+    publishSettings,
+    defaultSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core"           % catsVersion,
+      "org.jline"     % "jline-terminal"       % jlineVersion,
+      "org.jline"     % "jline-terminal-jansi" % jlineVersion,
+      "org.jline"     % "jline-reader"         % jlineVersion,
+      "org.scalatest" %% "scalatest"           % scalatestVersion % Test
+    )
+  )
+
 lazy val root = (project in file("."))
   .settings(
     skip in publish := true
@@ -92,7 +105,8 @@ lazy val root = (project in file("."))
   .aggregate(
     mtgjson,
     core,
-    inventory
+    inventory,
+    terminal
   )
 
 addCommandAlias("prePush", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt ;clean ;test")
