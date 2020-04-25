@@ -16,6 +16,7 @@ val circeVersion = "0.12.3"
 val shapelessVersion = "2.3.3"
 val monocleVersion = "2.0.3"
 val kantanCsvVersion = "0.6.0"
+val jlineVersion = "3.14.0"
 
 val scalatestVersion = "3.1.1"
 val scalatestScalacheckVersion = "3.1.1.1"
@@ -32,7 +33,7 @@ lazy val defaultSettings = Seq(
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 )
 
-lazy val core = (project in file("core"))
+lazy val core = (project in file("modules/core"))
   .settings(
     publishSettings,
     defaultSettings,
@@ -45,7 +46,7 @@ lazy val core = (project in file("core"))
     )
   )
 
-lazy val inventory = (project in file("inventory"))
+lazy val inventory = (project in file("modules/inventory"))
   .settings(
     publishSettings,
     defaultSettings,
@@ -64,7 +65,7 @@ lazy val inventory = (project in file("inventory"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val mtgjson = (project in file("mtgjson"))
+lazy val mtgjson = (project in file("modules/mtgjson"))
   .settings(
     publishSettings,
     defaultSettings,
