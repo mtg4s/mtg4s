@@ -1,9 +1,13 @@
 package vdx.mtg4s.terminal
 
+import cats.effect.IO
 import cats.instances.list._
 import cats.kernel.Semigroup
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import vdx.mtg4s.terminal.TerminalHelper.TerminalState
+
+import scala.collection.immutable.HashMap
 
 class LineReaderSpec extends AnyFlatSpec with Matchers {
   val backspace: Int = 127
@@ -16,6 +20,8 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
   class TestTerminal(keys: List[Int]) extends Terminal {
+    private val _debugger = Debugger.printlnDebugger(false)
+
     private[this] var _keys = keys
     private[this] var _output = ""
     private[this] var _writerBuffer = ""
@@ -29,7 +35,7 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
         flush()
         _keys match {
           case x :: xs => { _keys = xs; x }
-          case Nil     => fail("The aren't more keys")
+          case Nil     => fail("There aren't more keys")
         }
       }
     }
@@ -39,12 +45,14 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
       _writerBuffer = ""
     }
 
-    def getCursorPosition(): (Terminal.Row, Terminal.Column) = (1, 1)
+    def getCursorPosition(): (Terminal.Row, Terminal.Column) = {
+      TerminalHelper.parse(_output + _writerBuffer)(_debugger).cursor
+    }
 
     def output: String = _output
   }
 
-  def reader(keys: List[Int]): (TestTerminal, LineReader, String) = {
+  def reader(keys: List[Int]): (TestTerminal, LineReader[IO], String) = {
     val terminal = new TestTerminal(keys)
 
     (terminal, LineReader(terminal), "prompt > ")
@@ -60,24 +68,24 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
 
   "LineReader.readline" should "return an empty string if enter is the first character" in {
     val (_, lineReader, _) = reader(List(carriageReturn))
-    lineReader.readLine("This is a prompt") should be("")
+    lineReader.readLine("This is a prompt").unsafeRunSync should be("")
   }
 
   // Simple Ascii
 
   it should "return the typed ascii text" in {
     val (_, lineReader, prompt) = reader(strToChars("This is a test!\r"))
-    lineReader.readLine(prompt) should be("This is a test!")
+    lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
   }
 
   it should "display the ascii text on the terminal" in {
     val text = "This is a test!"
     val (term, lineReader, prompt) = reader(strToChars(s"${text}\r"))
 
-    lineReader.readLine(prompt)
+    lineReader.readLine(prompt).unsafeRunSync()
 
-    TerminalHelper.parse(term.output, prompt) should be(
-      (("This is a test!"), prompt.length() + text.length() + 1, List.empty)
+    TerminalHelper.parse(term.output) should be(
+      TerminalState(25 -> (prompt.length() + text.length() + 1), HashMap(25 -> s"${prompt}This is a test!"), List.empty)
     )
   }
 
@@ -89,7 +97,7 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
         List('t'.toInt, carriageReturn)
     )
 
-    lineReader.readLine(prompt) should be("This is a test!")
+    lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
   }
 
   it should "insert a character after the chursor after moving the cursor back then forward" in {
@@ -97,7 +105,7 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
       strToChars("This is a est!") ++ repeat(leftArrow, 2) ++ rightArrow ++ repeat(leftArrow, 3) ++
         List('t'.toInt, carriageReturn)
     )
-    lineReader.readLine(prompt) should be("This is a test!")
+    lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
   }
 
   it should "display the text on the terminal properly after moving the cursor back then forward" in {
@@ -106,8 +114,10 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
       strToChars(text) ++ repeat(leftArrow, 2) ++ rightArrow ++ repeat(leftArrow, 3) ++
         List('t'.toInt, carriageReturn)
     )
-    lineReader.readLine(prompt)
-    TerminalHelper.parse(term.output, prompt) should be(("This is a test!", prompt.length + 12, List.empty))
+    lineReader.readLine(prompt).unsafeRunSync()
+    TerminalHelper.parse(term.output) should be(
+      TerminalState(25 -> (prompt.length + 12), HashMap(25 -> s"${prompt}This is a test!"), List.empty)
+    )
 
   }
 
@@ -116,15 +126,19 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
   it should "delete the character before the cursor when pressing backspace" in {
     val (_, lineReader, prompt) =
       reader(strToChars("This is a teest!") ++ repeat(leftArrow, 4) ++ List(backspace, carriageReturn))
-    lineReader.readLine(prompt) should be("This is a test!")
+    lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
   }
 
   it should "update the output after deleting a charactere with backspace" in {
     val text = "This is a teest!"
     val (term, lineReader, prompt) = reader(strToChars(text) ++ repeat(leftArrow, 4) ++ List(backspace, carriageReturn))
-    lineReader.readLine(prompt)
-    TerminalHelper.parse(term.output, prompt) should be(
-      (("This is a test!"), prompt.length() + text.length() + 1 - 4 - 1, List.empty)
+    lineReader.readLine(prompt).unsafeRunSync()
+    TerminalHelper.parse(term.output) should be(
+      TerminalState(
+        25 -> (prompt.length() + text.length() + 1 - 4 - 1),
+        Map(25 -> s"${prompt}This is a test!"),
+        List.empty
+      )
     )
   }
 
@@ -135,7 +149,7 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
       strToChars("This is a tyest!") ++ repeat(leftArrow, 5) ++
         delete ++ List(carriageReturn)
     )
-    lineReader.readLine(prompt) should be("This is a test!")
+    lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
   }
 
   it should "properly update the terminal when pressing DELETE" in {
@@ -143,8 +157,10 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
       strToChars("This is a tyest!") ++ repeat(leftArrow, 5) ++
         delete ++ List(carriageReturn)
     )
-    lineReader.readLine(prompt)
-    TerminalHelper.parse(term.output, prompt) should be(("This is a test!", prompt.length + 12, List.empty))
+    lineReader.readLine(prompt).unsafeRunSync()
+    TerminalHelper.parse(term.output) should be(
+      TerminalState(25 -> (prompt.length + 12), HashMap(25 -> s"${prompt}This is a test!"), List.empty)
+    )
   }
 
   // Multiple keys
@@ -160,9 +176,24 @@ class LineReaderSpec extends AnyFlatSpec with Matchers {
         List(carriageReturn)
     )
 
-    lineReader.readLine(prompt)
-    TerminalHelper.parse(term.output, prompt) should be(
-      ("This is a test, no really!", 26 + prompt.length(), List.empty)
+    lineReader.readLine(prompt).unsafeRunSync()
+    TerminalHelper.parse(term.output) should be(
+      TerminalState(25 -> (26 + prompt.length()), HashMap(25 -> s"${prompt}This is a test, no really!"), List.empty)
     )
   }
+
+  // "LineReader.readline with autocomplete" should "display available completions" in {
+  //   val (_, lineReader, prompt) = reader(strToChars("foo") ++ List(carriageReturn))
+
+  //   val autocomplete: IO[String => List[String]] = IO.delay { str =>
+  //     List(
+  //       "foo",
+  //       "bar",
+  //       "baz",
+  //       "foobar"
+  //     ).filter(_.startsWith(str))
+  //   }
+
+  //   lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+  // }
 }

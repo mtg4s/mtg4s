@@ -13,7 +13,10 @@ object TerminalControl {
 
   def clearLine() = esc("0K")
 
-  def move(row: Int, column: Int) = esc(s"${row};${column}H")
+  @SuppressWarnings(Array("DisableSyntax.throw"))
+  def move(row: Int, column: Int) =
+    if (row < 0 || column < 0) throw new Exception(s"Row and column cannot be less than 0: ($row, $column) ")
+    else esc(s"${row};${column}H")
 
   def esc(s: String): String = s"\u001b[$s"
 }

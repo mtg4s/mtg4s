@@ -1,5 +1,7 @@
 package vdx.mtg4s.terminal
 
+import cats.effect.Resource
+import cats.effect.Sync
 import org.jline.keymap.BindingReader
 import org.jline.terminal.TerminalBuilder
 
@@ -21,33 +23,46 @@ object Terminal {
     def readchar(): Int
   }
 
-  def apply: Terminal = new Terminal {
+  def apply[F[_]: Sync]: Resource[F, Terminal] =
+    Resource.make(
+      Sync[F].delay {
+        val terminal = TerminalBuilder
+          .builder()
+          .system(true)
+          .jansi(true)
+          .build()
+        terminal.enterRawMode()
+        terminal.echo(false)
+        terminal
+      }
+    )(terminal =>
+      Sync[F].delay {
+        terminal.flush()
+        terminal.close()
+      }
+    ).map { underlying =>
+      new Terminal {
 
-    def writer(): Writer = _writer
+        def writer(): Writer = _writer
 
-    def reader(): Reader = _reader
+        def reader(): Reader = _reader
 
-    def flush(): Unit = underlying.flush()
+        def flush(): Unit = underlying.flush()
 
-    def getCursorPosition(): (Int, Int) = {
-      val pos = underlying.getCursorPosition(_ => ())
+        def getCursorPosition(): (Int, Int) = {
+          val pos = underlying.getCursorPosition(_ => ())
 
-      (pos.getY() + 1, pos.getX() + 1)
+          (pos.getY() + 1, pos.getX() + 1)
+        }
+
+        private val _writer = new Writer {
+          def write(s: String): Unit = underlying.writer().write(s)
+        }
+
+        private val _reader = new Reader {
+          def readchar(): Int = bindingReader.readCharacter()
+          private val bindingReader = new BindingReader(underlying.reader())
+        }
+      }
     }
-
-    private val underlying = TerminalBuilder
-      .builder()
-      .system(true)
-      .jansi(true)
-      .build()
-
-    private val _writer = new Writer {
-      def write(s: String): Unit = underlying.writer().write(s)
-    }
-
-    private val _reader = new Reader {
-      def readchar(): Int = bindingReader.readCharacter()
-      private val bindingReader = new BindingReader(underlying.reader())
-    }
-  }
 }

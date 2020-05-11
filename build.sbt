@@ -35,6 +35,7 @@ lazy val defaultSettings = Seq(
 
 lazy val core = (project in file("modules/core"))
   .settings(
+    name := "mtg4s-core",
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
@@ -48,6 +49,7 @@ lazy val core = (project in file("modules/core"))
 
 lazy val inventory = (project in file("modules/inventory"))
   .settings(
+    name := "mtg4s-inventory",
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
@@ -67,6 +69,7 @@ lazy val inventory = (project in file("modules/inventory"))
 
 lazy val mtgjson = (project in file("modules/mtgjson"))
   .settings(
+    name := "mtg4s-mtgjson",
     publishSettings,
     defaultSettings,
     parallelExecution in Test := false,
@@ -87,16 +90,30 @@ lazy val mtgjson = (project in file("modules/mtgjson"))
 
 lazy val terminal = (project in file("modules/terminal"))
   .settings(
+    name := "mtg4s-terminal",
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core"           % catsVersion,
+      "org.typelevel" %% "cats-effect"         % catsEffectVersion,
       "org.jline"     % "jline-terminal"       % jlineVersion,
       "org.jline"     % "jline-terminal-jansi" % jlineVersion,
       "org.jline"     % "jline-reader"         % jlineVersion,
       "org.scalatest" %% "scalatest"           % scalatestVersion % Test
     )
   )
+
+lazy val `terminal-example` = (project in file("modules/terminal/example"))
+  .settings(
+    name := "mtg4s-terminal-example",
+    publishSettings,
+    defaultSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core"   % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion
+    )
+  )
+  .dependsOn(terminal)
 
 lazy val root = (project in file("."))
   .settings(
@@ -106,7 +123,8 @@ lazy val root = (project in file("."))
     mtgjson,
     core,
     inventory,
-    terminal
+    terminal,
+    `terminal-example`
   )
 
 addCommandAlias("prePush", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt ;clean ;test")

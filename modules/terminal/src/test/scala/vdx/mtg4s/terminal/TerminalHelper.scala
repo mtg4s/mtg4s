@@ -28,48 +28,88 @@ object TerminalHelper {
   def insertCharAt(s: String, char: Char, index: Int) =
     s.substring(0, index) + char + s.substring(index)
 
-  def parse(output: String, prompt: String)(implicit debugger: Debugger): (String, Int, ControlSequence) = {
+  @SuppressWarnings(Array("DisableSyntax.throw"))
+  case class TerminalState(
+    cursor: (Int, Int),
+    content: Map[Int, String],
+    keyBuffer: ControlSequence
+  ) {
+    if (cursor._1 < 1 || cursor._2 < 1) throw new Exception(s"Invalid cursor: $cursor")
+  }
+
+  object TerminalState {
+    def empty: TerminalState =
+      TerminalState((25, 1), Map.empty, List.empty) // We start at bottom of the screen
+  }
+
+  def parse(output: String)(implicit debugger: Debugger): TerminalState = {
     import debugger._
 
-    output
+    def cursorLeft(cursor: (Int, Int), step: Int) = (cursor._1, cursor._2 - step)
+    def cursorRight(cursor: (Int, Int), step: Int) = (cursor._1, cursor._2 + step)
+    def modifyLine(content: Map[Int, String], cursor: (Int, Int), f: String => String) =
+      (content + (cursor._1 -> content.getOrElse(cursor._1, ""))).map {
+        case (index, value) if index === cursor._1 => index -> f(value)
+        case kv                                    => kv
+      }
+
+    val terminalState = output
       .toCharArray()
-      .foldLeft[(String, Int, ControlSequence)](("", prompt.length + 1, List.empty)) {
-        case ((result, cursor, buffer), char) =>
+      .foldLeft[TerminalState](TerminalState.empty) {
+        case (state @ TerminalState(cursor, content, buffer), char) =>
           implicit val depth: Debugger.Depth = Debugger.Depth(buffer.length)
-          debug(result + " | " + cursor + " | " + buffer + " | " + char)(())
+
+          debug(state.toString())(())
           char.toInt match {
             case 27 =>
-              debug(s"escape seq start, result: $result")((result, cursor, List(Escape)))
+              debug(s"escape seq start, content: $content")(state.copy(keyBuffer = List(Escape)))
 
             case c if buffer.nonEmpty =>
               (buffer :+ byteToControlSeq(c)) match {
                 case List(Escape, LeftSquareBracket, Number(digits), CapitalLetter('D')) =>
                   val n = digits.foldLeft("")(_ + _).toInt
-                  debug(s"cursor left by ${n}")((result, cursor - n, List.empty))
+                  debug(s"cursor left by ${n}")(state.copy(cursor = cursorLeft(cursor, n), keyBuffer = List.empty))
                 case List(Escape, LeftSquareBracket, Number(digits), CapitalLetter('C')) =>
                   val n = digits.foldLeft("")(_ + _).toInt
-                  debug(s"cursor right by ${n}")((result, cursor + n, List.empty))
+                  debug(s"cursor right by ${n}")(state.copy(cursor = cursorRight(cursor, n), keyBuffer = List.empty))
                 case List(Escape, LeftSquareBracket, Number(List(0)), CapitalLetter('K')) =>
-                  debug("clearline")((result.substring(0, cursor - prompt.length - 1), cursor, List.empty))
-                case List(Escape, LeftSquareBracket, Number(_), SemiColon, Number(digits2), CapitalLetter('H')) =>
+                  debug("clearline")(
+                    TerminalState(cursor, modifyLine(content, cursor, _.substring(0, cursor._2 - 1)), List.empty)
+                  )
+                case List(Escape, LeftSquareBracket, Number(digits1), SemiColon, Number(digits2), CapitalLetter('H')) =>
+                  val row = digits1.foldLeft("")(_ + _).toInt
                   val column = digits2.foldLeft("")(_ + _).toInt
-                  debug(s"move to col $column")((result, column, List.empty))
+                  debug(s"move to ($row,$column)")(state.copy(cursor = (row, column), keyBuffer = List.empty))
                 case seq =>
                   (buffer.last, byteToControlSeq(c)) match {
                     case (Number(digits1), Number(digits2)) =>
-                      debug("next digit")((result, cursor, buffer.dropRight(1) :+ Number(digits1 ++ digits2)))
-                    case (_, Unknown(_)) => debug("end")((result, cursor, List.empty))
-                    case _               => debug(s"next in seq: $c")((result, cursor, seq))
+                      debug("next digit")(state.copy(keyBuffer = buffer.dropRight(1) :+ Number(digits1 ++ digits2)))
+                    case (_, Unknown(c)) => debug(s"Unknow byte in sequence: $c")(state.copy(keyBuffer = List.empty))
+                    case _               => debug(s"next in seq: $c")(state.copy(keyBuffer = seq))
                   }
               }
 
             case 127 =>
-              debug("backspace")((removeCharAt(result, cursor - 1 - prompt.length() - 1), cursor - 1, buffer))
+              debug("backspace")(
+                TerminalState(
+                  cursorLeft(cursor, 1),
+                  modifyLine(content, cursor, removeCharAt(_, cursor._2 - 1 - 1)),
+                  buffer
+                )
+              )
             case c if 32 <= c && c <= 255 && c =!= 127 =>
-              debug(s"char: $char")((insertCharAt(result, char, cursor - prompt.length() - 1), cursor + 1, buffer))
+              debug(s"char: $char")(
+                TerminalState(
+                  cursorRight(cursor, 1),
+                  modifyLine(content, cursor, insertCharAt(_, char, cursor._2 - 1)),
+                  buffer
+                )
+              )
             case c =>
-              debug(s"unknown: $c")((result, cursor, List.empty))
+              debug(s"unknown: $c")(state.copy(keyBuffer = List.empty))
           }
       }
+
+    terminalState.copy(content = terminalState.content.filter({ case (_, line) => line.nonEmpty }))
   }
 }
