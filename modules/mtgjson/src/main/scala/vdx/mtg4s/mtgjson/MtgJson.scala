@@ -1,9 +1,7 @@
 package vdx.mtg4s.mtgjson
 
-import cats.MonadError
-import cats.effect.Resource
 import cats.effect.Sync
-import cats.syntax.applicativeError._
+import cats.syntax.functor._
 import io.circe.parser.decode
 import io.circe.{
   Decoder,
@@ -12,11 +10,6 @@ import io.circe.{
   ParsingFailure => CirceParsingFailure
 }
 import vdx.mtg4s.mtgjson.MtgJson.Error
-
-import scala.io.Source
-
-import java.io.File
-import java.io.FileNotFoundException
 
 /**
  * An interface to safely acquire an in memory instance of the MTGJson database.
@@ -27,9 +20,9 @@ import java.io.FileNotFoundException
 trait MtgJson[F[_], Repr] {
 
   /**
-   * Suspends the loading of the database in the given `F`
+   * Returns either an error or the given representation of the database
    */
-  def load(): F[Either[Error, Repr]]
+  def db: F[Either[Error, Repr]]
 }
 
 object MtgJson {
@@ -37,30 +30,20 @@ object MtgJson {
   sealed trait Error
   final case class ParsingFailure(message: String) extends Error
   final case class DecodingFailure(message: String) extends Error
-  final case class FileNotFound(message: String) extends Error
 
   /**
    * Creates an instance of `MtgJson[F]`
    */
-  def apply[F[_]: Sync: MonadError[*[_], Throwable], Repr: Decoder](mtgjson: File): MtgJson[F, Repr] =
+  def apply[F[_]: Sync, Repr: Decoder](
+    mtgjson: F[String]
+  ): MtgJson[F, Repr] =
     new MtgJson[F, Repr] {
-
-      override def load(): F[Either[Error, Repr]] =
-        Resource
-          .fromAutoCloseable(Sync[F].delay(Source.fromFile(mtgjson)))
-          .use { mtgjsonResource =>
-            Sync[F]
-              .delay(
-                decode[Repr](mtgjsonResource.mkString).left.map(circeErrorToMtgJsonError)
-              )
-          }
-          .recover {
-            case e: FileNotFoundException => Left(FileNotFound(e.getMessage()))
-          }
-
-      private def circeErrorToMtgJsonError(error: CirceError): Error = error match {
-        case e: CirceParsingFailure  => ParsingFailure(e.getMessage())
-        case e: CirceDecodingFailure => DecodingFailure(e.getMessage())
-      }
+      def db: F[Either[Error, Repr]] =
+        mtgjson.map(decode[Repr](_).left.map(circeErrorToMtgJsonError))
     }
+
+  private[this] def circeErrorToMtgJsonError(error: CirceError): Error = error match {
+    case e: CirceParsingFailure  => ParsingFailure(e.getMessage())
+    case e: CirceDecodingFailure => DecodingFailure(e.getMessage())
+  }
 }

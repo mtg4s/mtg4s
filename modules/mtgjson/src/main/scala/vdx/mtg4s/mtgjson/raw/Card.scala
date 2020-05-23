@@ -133,6 +133,7 @@ object Card {
     case object Showcase extends FrameEffect // This was missing from the docs
     case object Inverted extends FrameEffect // This was missing from the docs
     case object Waxingandwaningmoondfc extends FrameEffect // This was missing from the docs
+    case object Companion extends FrameEffect
   }
 
   sealed class FrameVersion(override val entryName: String) extends EnumEntry

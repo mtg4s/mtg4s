@@ -1,38 +1,38 @@
 package vdx.mtg4s.mtgjson
 
+import cats.effect.ContextShift
 import cats.effect.IO
 import org.scalatest.EitherValues
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import vdx.mtg4s.mtgjson.MtgJson._
+import vdx.mtg4s.mtgjson.allprintings.AllPrintingsJson
 import vdx.mtg4s.mtgjson.raw.AllPrintings
 
-import java.io.File
+import scala.concurrent.ExecutionContext
 
-class MtgJsonSpec extends MtgJsonTestDB with Matchers with EitherValues {
-  "MtgJson[F, Repr]" should "return FileNotfound when the file doesn't exist" in {
-    val nonExistentFile = new File("/nonexistent.example")
+class MtgJsonSpec extends AnyFlatSpec with Matchers with EitherValues {
+  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
-    val result = MtgJson[IO, AllPrintings](nonExistentFile).load().unsafeRunSync
-    result.left.value shouldBe a[FileNotFound]
+  "MtgJson[F, Repr]" should "return a ParsingFailure when the json is invalid" in runIO {
+    val invalidJson = getResource("invalid.json")
+
+    MtgJson[IO, AllPrintings](invalidJson).db
+      .map(_.left.value shouldBe a[ParsingFailure])
   }
 
-  it should "return a ParsingFailure when the json is invalid" in {
-    val invalidFile = new File(getResource("invalid.json").toURI())
+  it should "return a DecodingFailure when the given representation doesn't match the file" in runIO {
+    val invalidMtgJson = getResource("valid.json")
 
-    val result = MtgJson[IO, AllPrintings](invalidFile).load().unsafeRunSync()
-    result.left.value shouldBe a[ParsingFailure]
-
+    MtgJson[IO, AllPrintings](invalidMtgJson).db
+      .map(_.left.value shouldBe a[DecodingFailure])
   }
 
-  it should "return a DecodingFailure when the given representation doesn't match the file" in {
-    val invalidFile = new File(getResource("valid.json").toURI())
-
-    val result = MtgJson[IO, List[String]](invalidFile).load().unsafeRunSync()
-    result.left.value shouldBe a[DecodingFailure]
+  it should "load the database given the raw representation" in runIO {
+    MtgJson[IO, AllPrintings](AllPrintingsJson.string[IO]).db
+      .map(_ shouldBe a[Right[_, AllPrintings]])
   }
 
-  it should "load the database given the raw representation" in {
-    val result = MtgJson[IO, AllPrintings](allPringtingsJson).load().unsafeRunSync()
-    result shouldBe a[Right[_, AllPrintings]]
-  }
+  def runIO[A](test: IO[A]): A =
+    test.unsafeRunSync()
 }

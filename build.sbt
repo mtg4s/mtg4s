@@ -10,6 +10,7 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 
 val catsVersion = "2.1.1"
 val catsEffectVersion = "2.1.2"
+val fs2Version = "2.3.0"
 val enumeratumVersion = "1.5.13"
 val enumeratumCirceVersion = "1.5.23"
 val circeVersion = "0.12.3"
@@ -83,10 +84,24 @@ lazy val mtgjson = (project in file("modules/mtgjson"))
       "io.circe"                   %% "circe-parser"     % circeVersion,
       "com.beachape"               %% "enumeratum-circe" % enumeratumCirceVersion,
       "org.scalatest"              %% "scalatest"        % scalatestVersion % Test,
-      "com.gaborpihaj"             %% "fetchfile"        % "0.2.0" % Test
     )
   )
-  .dependsOn(core)
+  .dependsOn(
+    core,
+    `mtgjson-allprintings` % "compile->test"
+  )
+
+lazy val `mtgjson-allprintings` = (project in file("modules/mtgjson-allprintings"))
+  .settings(
+    name := "mtg4s-mtgjson-allprintings",
+    publishSettings,
+    defaultSettings,
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core"   % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "org.scalatest" %% "scalatest"   % scalatestVersion % Test
+    )
+  )
 
 lazy val terminal = (project in file("modules/terminal"))
   .settings(
@@ -120,11 +135,14 @@ lazy val root = (project in file("."))
     skip in publish := true
   )
   .aggregate(
-    mtgjson,
     core,
     inventory,
+    mtgjson,
+    `mtgjson-allprintings`,
     terminal,
     `terminal-example`
   )
 
-addCommandAlias("prePush", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt ;clean ;test")
+addCommandAlias("fixImports", ";scalafix SortImports ;test:scalafix SortImports")
+addCommandAlias("fmt", ";scalafix ;test:scalafix ;fixImports ;scalafmtAll ;scalafmtSbt")
+addCommandAlias("prePush", ";fmt ;clean ;reload ;test")
