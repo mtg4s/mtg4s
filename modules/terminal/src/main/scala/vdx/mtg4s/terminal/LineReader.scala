@@ -9,8 +9,8 @@ import cats.syntax.flatMap._
 trait InputReader
 
 trait LineReader[F[_]] {
-  def readLine(prompt: String): F[String]
-  def readLine(prompt: String, autocomplete: String => List[String]): F[String]
+  def readLine(prompt: String): F[String] = readLine(prompt, None)
+  def readLine(prompt: String, autocomplete: Option[String => List[String]]): F[String]
 }
 
 object LineReader {
@@ -25,10 +25,7 @@ object LineReader {
     private val writer = terminal.writer()
     private val reader = terminal.reader()
 
-    def readLine(prompt: String): F[String] =
-      readLine(prompt, const(List.empty))
-
-    def readLine(prompt: String, autocomplete: String => List[String]): F[String] =
+    def readLine(prompt: String, autocomplete: Option[String => List[String]]): F[String] =
       Sync[F].delay(write(prompt)) >>
         Sync[F].delay(
           LazyList
@@ -58,12 +55,12 @@ object LineReader {
       terminal.flush()
     }
 
-    private[this] def runCompletion(autocomplete: String => List[String], prompt: String)(
+    private[this] def runCompletion(autocomplete: Option[String => List[String]], prompt: String)(
       state: LineReaderState
     ): LineReaderState =
       state match {
         case state @ (_, _, line) =>
-          printCompletionCandidates(autocomplete(line), prompt)
+          autocomplete.fold(())(ac => printCompletionCandidates(ac(line), prompt))
           state
       }
 

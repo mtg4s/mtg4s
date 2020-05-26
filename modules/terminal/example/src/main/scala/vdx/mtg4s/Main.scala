@@ -21,7 +21,7 @@ object Main extends IOApp {
       )
 
       lineReader
-        .readLine("prompt > ", (str: String) => lines.filter(_.startsWith(str)))
+        .readLine("prompt > ", Option((str: String) => lines.filter(_.startsWith(str))))
         .as(ExitCode.Success)
     }
   }
