@@ -13,7 +13,7 @@ val catsEffectVersion = "2.1.2"
 val fs2Version = "2.3.0"
 val enumeratumVersion = "1.5.13"
 val enumeratumCirceVersion = "1.5.23"
-val circeVersion = "0.12.3"
+val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
 val monocleVersion = "2.0.3"
 val kantanCsvVersion = "0.6.0"
@@ -75,15 +75,16 @@ lazy val mtgjson = (project in file("modules/mtgjson"))
     defaultSettings,
     parallelExecution in Test := false,
     libraryDependencies ++= Seq(
-      "org.typelevel"              %% "cats-core"        % catsVersion,
-      "org.typelevel"              %% "cats-effect"      % catsEffectVersion,
-      "com.beachape"               %% "enumeratum"       % enumeratumVersion,
-      "com.github.julien-truffaut" %% "monocle-core"     % monocleVersion,
-      "io.circe"                   %% "circe-core"       % circeVersion,
-      "io.circe"                   %% "circe-generic"    % circeVersion,
-      "io.circe"                   %% "circe-parser"     % circeVersion,
-      "com.beachape"               %% "enumeratum-circe" % enumeratumCirceVersion,
-      "org.scalatest"              %% "scalatest"        % scalatestVersion % Test,
+      "org.typelevel"              %% "cats-core"            % catsVersion,
+      "org.typelevel"              %% "cats-effect"          % catsEffectVersion,
+      "com.beachape"               %% "enumeratum"           % enumeratumVersion,
+      "com.github.julien-truffaut" %% "monocle-core"         % monocleVersion,
+      "io.circe"                   %% "circe-core"           % circeVersion,
+      "io.circe"                   %% "circe-generic"        % circeVersion,
+      "io.circe"                   %% "circe-generic-extras" % circeVersion,
+      "io.circe"                   %% "circe-parser"         % circeVersion,
+      "com.beachape"               %% "enumeratum-circe"     % enumeratumCirceVersion,
+      "org.scalatest"              %% "scalatest"            % scalatestVersion % Test
     )
   )
   .dependsOn(

@@ -10,6 +10,7 @@ trait InputReader
 
 trait LineReader[F[_]] {
   def readLine(prompt: String): F[String] = readLine(prompt, None)
+  def readLine(prompt: String, autocomplete: String => List[String]): F[String] = readLine(prompt, Option(autocomplete))
   def readLine(prompt: String, autocomplete: Option[String => List[String]]): F[String]
 }
 
