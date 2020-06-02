@@ -1,7 +1,6 @@
 package vdx.mtg4s.terminal
 
-import cats.effect.Resource
-import cats.effect.Sync
+import cats.effect.{Resource, Sync}
 import org.jline.keymap.BindingReader
 import org.jline.terminal.TerminalBuilder
 

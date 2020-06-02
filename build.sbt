@@ -4,7 +4,7 @@ ThisBuild / name := "mtg4s"
 ThisBuild / scalaVersion := "2.13.1"
 ThisBuild / organization := "com.gaborpihaj"
 ThisBuild / dynverSonatypeSnapshots := true
-ThisBuild / scalafixDependencies += "com.nequissimus" %% "sort-imports" % "0.3.2"
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.3.1-RC2"
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
@@ -144,6 +144,5 @@ lazy val root = (project in file("."))
     `terminal-example`
   )
 
-addCommandAlias("fixImports", ";scalafix SortImports ;test:scalafix SortImports")
-addCommandAlias("fmt", ";scalafix ;test:scalafix ;fixImports ;scalafmtAll ;scalafmtSbt")
+addCommandAlias("fmt", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt")
 addCommandAlias("prePush", ";fmt ;clean ;reload ;test")

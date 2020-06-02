@@ -1,9 +1,9 @@
 package vdx.mtg4s.mtgjson
 
+import java.util.UUID
+
 import io.circe.Codec
 import io.circe.generic.extras.semiauto.deriveUnwrappedCodec
-
-import java.util.UUID
 
 final case class MtgJsonId(uuid: UUID) extends AnyVal
 

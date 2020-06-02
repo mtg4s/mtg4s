@@ -1,13 +1,13 @@
 package vdx.mtg4s.terminal
 
+import scala.collection.immutable.HashMap
+
 import cats.effect.IO
 import cats.instances.list._
 import cats.kernel.Semigroup
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import vdx.mtg4s.terminal.TerminalHelper.TerminalState
-
-import scala.collection.immutable.HashMap
 
 class LineReaderSpec extends AnyFlatSpec with Matchers {
   val backspace: Int = 127

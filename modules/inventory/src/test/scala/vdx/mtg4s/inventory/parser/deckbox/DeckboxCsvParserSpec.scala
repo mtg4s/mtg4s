@@ -1,7 +1,8 @@
 package vdx.mtg4s.inventory.parser.deckbox
 
-import cats.data.Chain
-import cats.data.NonEmptyList
+import java.util.UUID
+
+import cats.data.{Chain, NonEmptyList}
 import cats.effect.IO
 import cats.syntax.eq._
 import kantan.csv._
@@ -14,11 +15,8 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.claimant.Claim
 import vdx.mtg4s._
-import vdx.mtg4s.inventory.parser.Parser.CardNotFoundError
-import vdx.mtg4s.inventory.parser.Parser.ParsingError
+import vdx.mtg4s.inventory.parser.Parser.{CardNotFoundError, ParsingError}
 import vdx.mtg4s.inventory.parser.deckbox.Generators._
-
-import java.util.UUID
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.==")) // For nice Claimant messages
 class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {

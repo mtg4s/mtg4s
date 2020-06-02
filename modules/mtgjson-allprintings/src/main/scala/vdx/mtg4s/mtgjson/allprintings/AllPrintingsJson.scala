@@ -1,8 +1,8 @@
 package vdx.mtg4s.mtgjson.allprintings
 
-import cats.effect.Sync
-
 import scala.io.Source
+
+import cats.effect.Sync
 
 object AllPrintingsJson {
   def string[F[_]: Sync]: F[String] =

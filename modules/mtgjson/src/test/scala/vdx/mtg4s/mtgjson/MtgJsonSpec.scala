@@ -1,15 +1,14 @@
 package vdx.mtg4s.mtgjson
 
-import cats.effect.ContextShift
-import cats.effect.IO
+import scala.concurrent.ExecutionContext
+
+import cats.effect.{ContextShift, IO}
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import vdx.mtg4s.mtgjson.MtgJson._
 import vdx.mtg4s.mtgjson.allprintings.AllPrintingsJson
 import vdx.mtg4s.mtgjson.raw.AllPrintings
-
-import scala.concurrent.ExecutionContext
 
 class MtgJsonSpec extends AnyFlatSpec with Matchers with EitherValues {
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)

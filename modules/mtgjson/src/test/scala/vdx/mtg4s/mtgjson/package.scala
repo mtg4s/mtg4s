@@ -1,8 +1,8 @@
 package vdx.mtg4s
 
-import cats.effect.IO
-
 import scala.io.Source
+
+import cats.effect.IO
 
 package object mtgjson {
   def getResource(name: String): IO[String] =

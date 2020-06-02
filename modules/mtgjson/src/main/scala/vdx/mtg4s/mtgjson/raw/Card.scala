@@ -1,13 +1,13 @@
 package vdx.mtg4s.mtgjson.raw
 
+import java.util.UUID
+
 import enumeratum.EnumEntry.{Lowercase, Snakecase}
 import enumeratum._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import vdx.mtg4s.mtgjson.MtgJsonId
 import vdx.mtg4s.mtgjson.raw.Card._
-
-import java.util.UUID
 
 case class Card(
   artist: Option[String], // This is not optional in the docs

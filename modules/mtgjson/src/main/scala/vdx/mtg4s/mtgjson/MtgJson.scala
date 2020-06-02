@@ -5,8 +5,8 @@ import cats.syntax.functor._
 import io.circe.parser.decode
 import io.circe.{
   Decoder,
-  Error => CirceError,
   DecodingFailure => CirceDecodingFailure,
+  Error => CirceError,
   ParsingFailure => CirceParsingFailure
 }
 import vdx.mtg4s.mtgjson.MtgJson.Error

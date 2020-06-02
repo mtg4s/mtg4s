@@ -1,12 +1,12 @@
 package vdx.mtg4s.mtgjson.raw
 
+import java.time.LocalDate
+
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import vdx.mtg4s.mtgjson.raw.Set.SetType
-
-import java.time.LocalDate
 
 case class Set(
   baseSetSize: Int,

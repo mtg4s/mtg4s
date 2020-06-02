@@ -1,10 +1,10 @@
 package vdx.mtg4s.mtgjson.allprintings
 
+import java.security.MessageDigest
+
 import cats.effect.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import java.security.MessageDigest
 
 class AllPrintingsJsonSpec extends AnyWordSpec with Matchers {
 

@@ -1,9 +1,9 @@
 package vdx.mtg4s.mtgjson.raw
 
+import java.time.LocalDate
+
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-
-import java.time.LocalDate
 
 case class Ruling(
   date: LocalDate,

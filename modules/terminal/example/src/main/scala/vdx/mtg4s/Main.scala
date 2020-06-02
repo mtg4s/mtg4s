@@ -1,10 +1,8 @@
 package vdx.mtg4s
 
-import cats.effect.IOApp
-import cats.effect.{ExitCode, IO}
+import cats.effect.{ExitCode, IO, IOApp}
 import cats.syntax.functor._
-import vdx.mtg4s.terminal.LineReader
-import vdx.mtg4s.terminal.Terminal
+import vdx.mtg4s.terminal.{LineReader, Terminal}
 
 object Main extends IOApp {
 
