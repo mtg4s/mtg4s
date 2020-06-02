@@ -118,6 +118,7 @@ lazy val terminal = (project in file("modules/terminal"))
       "org.scalatest" %% "scalatest"           % scalatestVersion % Test
     )
   )
+  .dependsOn(core)
 
 lazy val `terminal-example` = (project in file("modules/terminal/example"))
   .settings(

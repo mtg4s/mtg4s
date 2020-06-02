@@ -31,7 +31,9 @@ class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {
 
   val cardDB: CardDB[IO, Card, SetName] = new CardDB[IO, Card, SetName] {
 
-    override def findByNameAndSet(name: CardName, set: SetName): IO[Option[Card]] =
+    def findMatchingByName(fragment: String): IO[List[Card]] = ???
+
+    def findByNameAndSet(name: CardName, set: SetName): IO[Option[Card]] =
       IO.pure(cards.get(name).filter(_.set === set))
   }
 
