@@ -14,12 +14,18 @@ object MtgJsonDB {
    */
   def apply[F[_]: Applicative, SetId: Eq](
     allPrintings: AllPrintings
-  )(implicit GSI: Getter[Set, SetId]): CardDB[F, Card, SetId] = new CardDB[F, Card, SetId] {
+  )(implicit GSI: Getter[Set, SetId]): CardDB[F, Card, SetId] =
+    new CardDB[F, Card, SetId] {
 
-    override def findByNameAndSet(name: CardName, setId: SetId): F[Option[Card]] =
-      Applicative[F].pure(allPrintings.values.find(GSI.get(_) === setId).flatMap(findCardInSet(name)))
+      def findMatchingByName(fragment: String): F[List[Card]] =
+        Applicative[F].pure(
+          allPrintings.values.toList.map(_.cards).flatten.filter(_.name.contains(fragment))
+        )
 
-    private[this] def findCardInSet(name: CardName)(set: Set): Option[Card] =
-      set.cards.find(_.name === name)
-  }
+      def findByNameAndSet(name: CardName, setId: SetId): F[Option[Card]] =
+        Applicative[F].pure(allPrintings.values.find(GSI.get(_) === setId).flatMap(findCardInSet(name)))
+
+      private[this] def findCardInSet(name: CardName)(set: Set): Option[Card] =
+        set.cards.find(_.name === name)
+    }
 }

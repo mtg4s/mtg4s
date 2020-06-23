@@ -1,5 +1,7 @@
 package vdx.mtg4s.terminal
 
+import scala.annotation.tailrec
+
 import cats.instances.int._
 import cats.syntax.eq._
 
@@ -25,8 +27,15 @@ object TerminalHelper {
   def removeCharAt(s: String, index: Int) =
     s.substring(0, index) + s.substring(index + 1)
 
-  def insertCharAt(s: String, char: Char, index: Int) =
-    s.substring(0, index) + char + s.substring(index)
+  @tailrec
+  def rightPad(s: String, n: Int): String =
+    if (s.length() < n) rightPad(s + " ", n)
+    else s
+
+  def insertCharAt(s: String, char: Char, index: Int) = {
+    val padded = rightPad(s, index)
+    padded.substring(0, index) + char + padded.substring(index)
+  }
 
   @SuppressWarnings(Array("DisableSyntax.throw"))
   case class TerminalState(
@@ -44,6 +53,8 @@ object TerminalHelper {
 
   def parse(output: String)(implicit debugger: Debugger): TerminalState = {
     import debugger._
+
+    debug("parser started...")(())
 
     def cursorLeft(cursor: (Int, Int), step: Int) = (cursor._1, cursor._2 - step)
     def cursorRight(cursor: (Int, Int), step: Int) = (cursor._1, cursor._2 + step)

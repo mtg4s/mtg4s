@@ -9,6 +9,7 @@ trait Terminal {
   def reader(): Terminal.Reader
   def flush(): Unit
   def getCursorPosition(): (Terminal.Row, Terminal.Column)
+  def getHeight(): Int
 }
 
 object Terminal {
@@ -55,6 +56,8 @@ object Terminal {
 
             (pos.getY() + 1, pos.getX() + 1)
           }
+
+          def getHeight(): Int = underlying.getHeight()
 
           private val _writer = new Writer {
             def write(s: String): Unit = underlying.writer().write(s)

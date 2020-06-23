@@ -1,5 +1,6 @@
 package vdx
 
+import cats.kernel.Eq
 import shapeless.tag
 import shapeless.tag.@@
 
@@ -12,6 +13,7 @@ package object mtg4s extends Tags {
   type SetName = String @@ SetNameTag
   object SetName {
     def apply(code: String): SetName = tag[SetNameTag][String](code)
+    implicit val eq: Eq[SetName] = Eq.fromUniversalEquals
   }
 
   type SetCode = String @@ SetCodeTag

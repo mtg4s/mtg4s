@@ -4,7 +4,6 @@ import java.util.UUID
 
 import cats.data.{Chain, NonEmptyList}
 import cats.effect.IO
-import cats.syntax.eq._
 import kantan.csv._
 import kantan.csv.generic._
 import kantan.csv.ops._
@@ -14,28 +13,17 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.claimant.Claim
+import vdx.mtg4s.TestCardDB.{defaultCards, Card}
 import vdx.mtg4s._
 import vdx.mtg4s.inventory.parser.Parser.{CardNotFoundError, ParsingError}
 import vdx.mtg4s.inventory.parser.deckbox.Generators._
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.==")) // For nice Claimant messages
 class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {
-  case class Card(name: String, set: SetName, id: UUID)
-
-  val cards: Map[String, Card] = Map(
-    "Primeval Titan" -> Card("Primeval Titan", SetName("Iconic Masters"), UUID.randomUUID()),
-    "Snapcaster Mage" -> Card("Snapcaster Mage", SetName("Innistrad"), UUID.randomUUID()),
-    "Lightning Bolt" -> Card("Lightning Bolt", SetName("Masters 25"), UUID.randomUUID()),
-    "Karn, the Great Creator" -> Card("Karn, the Great Creator", SetName("War of the Spark"), UUID.randomUUID())
-  )
-
-  val cardDB: CardDB[IO, Card, SetName] = new CardDB[IO, Card, SetName] {
-
-    override def findByNameAndSet(name: CardName, set: SetName): IO[Option[Card]] =
-      IO.pure(cards.get(name).filter(_.set === set))
-  }
 
   implicit val idGetter: Getter[Card, UUID] = _.id
+
+  val cardDB = TestCardDB[IO]()
 
   val parser = DeckboxCsvParser[IO, Card, UUID](cardDB)
 
@@ -83,10 +71,10 @@ class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {
       check(
         Prop.forAll(validDeckboxRow) { row =>
           val parserResult = parser.parse(toCsv(row)).unsafeRunSync()
-          val cardFromDb = cards(row.name)
+          val cardFromDb = defaultCards(s"${row.name} - ${row.edition}")
 
           Claim(
-            parserResult.getOrElse(fail("Right value was expected but got Left")) == CardList(
+            parserResult.fold(errors => fail(s"Right value was expected but got Left: $errors"), identity) == CardList(
               Chain.one(CardList.Card(cardFromDb.id, row.count))
             )
           )

@@ -30,6 +30,7 @@ lazy val publishSettings = List(
 )
 
 lazy val defaultSettings = Seq(
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDS"),
   addCompilerPlugin(scalafixSemanticdb),
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 )
@@ -40,11 +41,12 @@ lazy val core = (project in file("modules/core"))
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
-      "org.typelevel"     %% "cats-core"       % catsVersion,
-      "com.chuusai"       %% "shapeless"       % shapelessVersion,
-      "org.scalatest"     %% "scalatest"       % scalatestVersion % Test,
-      "org.scalatestplus" %% "scalacheck-1-14" % scalatestScalacheckVersion % Test,
-      "org.scalacheck"    %% "scalacheck"      % scalaCheckVersion % Test
+      "org.typelevel"              %% "cats-core"       % catsVersion,
+      "com.chuusai"                %% "shapeless"       % shapelessVersion,
+      "org.scalatest"              %% "scalatest"       % scalatestVersion % Test,
+      "org.scalatestplus"          %% "scalacheck-1-14" % scalatestScalacheckVersion % Test,
+      "org.scalacheck"             %% "scalacheck"      % scalaCheckVersion % Test,
+      "com.github.julien-truffaut" %% "monocle-core"    % monocleVersion % Test
     )
   )
 
@@ -110,14 +112,16 @@ lazy val terminal = (project in file("modules/terminal"))
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"           % catsVersion,
-      "org.typelevel" %% "cats-effect"         % catsEffectVersion,
-      "org.jline"     % "jline-terminal"       % jlineVersion,
-      "org.jline"     % "jline-terminal-jansi" % jlineVersion,
-      "org.jline"     % "jline-reader"         % jlineVersion,
-      "org.scalatest" %% "scalatest"           % scalatestVersion % Test
+      "org.typelevel"              %% "cats-core"           % catsVersion,
+      "org.typelevel"              %% "cats-effect"         % catsEffectVersion,
+      "org.jline"                  % "jline-terminal"       % jlineVersion,
+      "org.jline"                  % "jline-terminal-jansi" % jlineVersion,
+      "org.jline"                  % "jline-reader"         % jlineVersion,
+      "com.github.julien-truffaut" %% "monocle-core"        % monocleVersion,
+      "org.scalatest"              %% "scalatest"           % scalatestVersion % Test
     )
   )
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val `terminal-example` = (project in file("modules/terminal/example"))
   .settings(

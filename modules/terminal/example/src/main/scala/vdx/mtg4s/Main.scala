@@ -1,7 +1,9 @@
 package vdx.mtg4s
 
 import cats.effect.{ExitCode, IO, IOApp}
+import cats.instances.string._
 import cats.syntax.functor._
+import vdx.mtg4s.terminal.LineReader.AutoCompletionSource
 import vdx.mtg4s.terminal.{LineReader, Terminal}
 
 object Main extends IOApp {
@@ -18,8 +20,10 @@ object Main extends IOApp {
         "baz"
       )
 
+      val autocomplete: AutoCompletionSource[String] = (str: String) => lines.filter(_.startsWith(str)).map(s => s -> s)
+
       lineReader
-        .readLine("prompt > ", Option((str: String) => lines.filter(_.startsWith(str))))
+        .readLine("prompt > ", autocomplete)
         .as(ExitCode.Success)
     }
   }
