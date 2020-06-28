@@ -4,7 +4,7 @@ import cats.Show
 import cats.effect.Sync
 import cats.kernel.Eq
 import cats.syntax.apply._
-import vdx.mtg4s.terminal.LineReader.{AutoCompletionConfig, AutoCompletionSource}
+import vdx.mtg4s.terminal.{AutoCompletionConfig, AutoCompletionSource}
 
 trait Console[F[_]] {
   def putStrLn(): F[Unit]

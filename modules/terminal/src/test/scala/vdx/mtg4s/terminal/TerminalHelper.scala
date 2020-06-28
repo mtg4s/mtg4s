@@ -5,6 +5,7 @@ import scala.annotation.tailrec
 import cats.instances.int._
 import cats.syntax.eq._
 
+@SuppressWarnings(Array("DisableSyntax.throw"))
 object TerminalHelper {
 
   sealed trait ControlSeqenceChar
@@ -12,14 +13,16 @@ object TerminalHelper {
   case object LeftSquareBracket extends ControlSeqenceChar
   case object SemiColon extends ControlSeqenceChar
   case class Number(digits: List[Int]) extends ControlSeqenceChar
+//  case class Letter(c: Char) extends ControlSequenceChar
   case class CapitalLetter(c: Char) extends ControlSeqenceChar
   case class Unknown(char: Int) extends ControlSeqenceChar
 
-  def byteToControlSeq(c: Int) =
+  def byteToControlSeq(c: Int): ControlSeqenceChar =
     if (48 <= c && c <= 57) Number(List(c.toChar.toString().toInt))
     else if (c === 91) LeftSquareBracket
     else if (c === 59) SemiColon
     else if (65 <= c && c <= 90) CapitalLetter(c.toChar)
+    //  else if (97 <= c && c <= 122) Letter(c.toChar)
     else Unknown(c)
 
   type ControlSequence = List[ControlSeqenceChar]
@@ -37,18 +40,18 @@ object TerminalHelper {
     padded.substring(0, index) + char + padded.substring(index)
   }
 
-  @SuppressWarnings(Array("DisableSyntax.throw"))
   case class TerminalState(
     cursor: (Int, Int),
     content: Map[Int, String],
-    keyBuffer: ControlSequence
+    keyBuffer: ControlSequence,
+    savedPos: List[(Int, Int)]
   ) {
     if (cursor._1 < 1 || cursor._2 < 1) throw new Exception(s"Invalid cursor: $cursor")
   }
 
   object TerminalState {
     def empty: TerminalState =
-      TerminalState((25, 1), Map.empty, List.empty) // We start at bottom of the screen
+      TerminalState((25, 1), Map.empty, List.empty, List.empty) // We start at bottom of the screen
   }
 
   def parse(output: String)(implicit debugger: Debugger): TerminalState = {
@@ -67,7 +70,7 @@ object TerminalHelper {
     val terminalState = output
       .toCharArray()
       .foldLeft[TerminalState](TerminalState.empty) {
-        case (state @ TerminalState(cursor, content, buffer), char) =>
+        case (state @ TerminalState(cursor, content, buffer, savedPos), char) =>
           implicit val depth: Debugger.Depth = Debugger.Depth(buffer.length)
 
           debug(state.toString())(())
@@ -77,6 +80,15 @@ object TerminalHelper {
 
             case c if buffer.nonEmpty =>
               (buffer :+ byteToControlSeq(c)) match {
+                case List(Escape, Number(List(7))) =>
+                  debug("save cursor pos")(state.copy(savedPos = state.cursor :: savedPos, keyBuffer = List.empty))
+                case List(Escape, Number(List(8))) =>
+                  debug("restore cursor pos")(
+                    state.savedPos match {
+                      case pos :: ps => state.copy(cursor = pos, savedPos = ps, keyBuffer = List.empty)
+                      case Nil       => throw new Exception("Trying to restore a cursor pos, but there isn't any saved")
+                    }
+                  )
                 case List(Escape, LeftSquareBracket, Number(digits), CapitalLetter('D')) =>
                   val n = digits.foldLeft("")(_ + _).toInt
                   debug(s"cursor left by ${n}")(state.copy(cursor = cursorLeft(cursor, n), keyBuffer = List.empty))
@@ -85,7 +97,9 @@ object TerminalHelper {
                   debug(s"cursor right by ${n}")(state.copy(cursor = cursorRight(cursor, n), keyBuffer = List.empty))
                 case List(Escape, LeftSquareBracket, Number(List(0)), CapitalLetter('K')) =>
                   debug("clearline")(
-                    TerminalState(cursor, modifyLine(content, cursor, _.substring(0, cursor._2 - 1)), List.empty)
+                    TerminalState(cursor, modifyLine(content, cursor, { s =>
+                      debug(s"string is '$s', cursor is ${cursor._2}")(s.substring(0, cursor._2 - 1))
+                    }), List.empty, savedPos)
                   )
                 case List(Escape, LeftSquareBracket, Number(digits1), SemiColon, Number(digits2), CapitalLetter('H')) =>
                   val row = digits1.foldLeft("")(_ + _).toInt
@@ -105,7 +119,8 @@ object TerminalHelper {
                 TerminalState(
                   cursorLeft(cursor, 1),
                   modifyLine(content, cursor, removeCharAt(_, cursor._2 - 1 - 1)),
-                  buffer
+                  buffer,
+                  savedPos
                 )
               )
             case c if 32 <= c && c <= 255 && c =!= 127 =>
@@ -113,7 +128,8 @@ object TerminalHelper {
                 TerminalState(
                   cursorRight(cursor, 1),
                   modifyLine(content, cursor, insertCharAt(_, char, cursor._2 - 1)),
-                  buffer
+                  buffer,
+                  savedPos
                 )
               )
             case c =>

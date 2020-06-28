@@ -8,7 +8,7 @@ import cats.instances.list._
 import cats.instances.string._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vdx.mtg4s.terminal.LineReader.AutoCompletionSource
+import vdx.mtg4s.terminal.AutoCompletionSource
 import vdx.mtg4s.terminal.TerminalHelper.TerminalState
 
 class LineReaderSpec extends AnyWordSpec with Matchers {
@@ -52,6 +52,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
           TerminalState(
             25 -> (prompt.length() + text.length() + 1),
             HashMap(25 -> s"${prompt}This is a test!"),
+            List.empty,
             List.empty
           )
         )
@@ -84,7 +85,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
         )
         lineReader.readLine(prompt).unsafeRunSync()
         TerminalHelper.parse(term.output) should be(
-          TerminalState(25 -> (prompt.length + 12), HashMap(25 -> s"${prompt}This is a test!"), List.empty)
+          TerminalState(25 -> (prompt.length + 12), HashMap(25 -> s"${prompt}This is a test!"), List.empty, List.empty)
         )
 
       }
@@ -106,6 +107,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
           TerminalState(
             25 -> (prompt.length() + text.length() + 1 - 4 - 1),
             Map(25 -> s"${prompt}This is a test!"),
+            List.empty,
             List.empty
           )
         )
@@ -128,7 +130,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
         )
         lineReader.readLine(prompt).unsafeRunSync()
         TerminalHelper.parse(term.output) should be(
-          TerminalState(25 -> (prompt.length + 12), HashMap(25 -> s"${prompt}This is a test!"), List.empty)
+          TerminalState(25 -> (prompt.length + 12), HashMap(25 -> s"${prompt}This is a test!"), List.empty, List.empty)
         )
       }
     }
@@ -147,7 +149,12 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
 
         lineReader.readLine(prompt).unsafeRunSync()
         TerminalHelper.parse(term.output) should be(
-          TerminalState(25 -> (26 + prompt.length()), HashMap(25 -> s"${prompt}This is a test, no really!"), List.empty)
+          TerminalState(
+            25 -> (26 + prompt.length()),
+            HashMap(25 -> s"${prompt}This is a test, no really!"),
+            List.empty,
+            List.empty
+          )
         )
       }
     }
@@ -181,6 +188,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
                 24 -> (repeat(" ", prompt.length()) + "foobarbaz"),
                 25 -> s"${prompt}foo"
               ),
+              List.empty,
               List.empty
             )
           )
@@ -205,6 +213,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
                 24 -> (repeat(" ", prompt.length()) + "foobarbaz"),
                 25 -> s"${prompt}foo"
               ),
+              List.empty,
               List.empty
             )
           )
@@ -227,6 +236,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
               HashMap(
                 25 -> s"${prompt}foo bar"
               ),
+              List.empty,
               List.empty
             )
           )

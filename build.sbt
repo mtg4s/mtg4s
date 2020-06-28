@@ -30,7 +30,7 @@ lazy val publishSettings = List(
 )
 
 lazy val defaultSettings = Seq(
-  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDS"),
+  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
   addCompilerPlugin(scalafixSemanticdb),
   addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
 )

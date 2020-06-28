@@ -5,6 +5,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.{~>, Id, Monad, Show}
 import monocle.Getter
+import vdx.mtg4s.terminal.AutoCompletionConfig._
 import vdx.mtg4s.terminal.Console
 import vdx.mtg4s.{CardDB, CardName}
 

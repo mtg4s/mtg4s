@@ -3,8 +3,7 @@ package vdx.mtg4s
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.instances.string._
 import cats.syntax.functor._
-import vdx.mtg4s.terminal.LineReader.AutoCompletionSource
-import vdx.mtg4s.terminal.{LineReader, Terminal}
+import vdx.mtg4s.terminal._
 
 object Main extends IOApp {
 
@@ -12,15 +11,14 @@ object Main extends IOApp {
     Terminal[IO].use { terminal =>
       val lineReader = LineReader[IO](terminal)
 
-      val lines = List(
-        "foo",
-        "foobar",
-        "foobarbaz",
-        "bar",
-        "baz"
-      )
-
-      val autocomplete: AutoCompletionSource[String] = (str: String) => lines.filter(_.startsWith(str)).map(s => s -> s)
+      val autocomplete: AutoCompletionSource[String] = str =>
+        List(
+          "foo",
+          "bar",
+          "baz",
+          "foobar",
+          "foobarbaz"
+        ).filter(_.startsWith(str)).map(s => s -> s)
 
       lineReader
         .readLine("prompt > ", autocomplete)
