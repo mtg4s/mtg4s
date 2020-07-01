@@ -51,30 +51,32 @@ object LineReaderImpl {
         prompt: String,
         autocomplete: Option[(AutoCompletionConfig, AutoCompletionSource[Repr])]
       ): F[(String, Option[Repr])] =
-        Sync[F].delay(
-          LazyList
-            .continually(reader.readchar())
-            .takeWhile(_ =!= 13)
-            .map(Chain.one)
-            .map(readSequence)
-            .foldLeft(LineReaderState.empty[Repr]) { (state, byteSeq) =>
-              val env = Env(terminal.getCursorPosition()._1, prompt, byteSeq, autocomplete)
+        Sync[F]
+          .delay(
+            LazyList
+              .continually(reader.readchar())
+              .takeWhile(_ =!= 13)
+              .map(Chain.one)
+              .map(readSequence)
+              .foldLeft(LineReaderState.empty[Repr]) { (state, byteSeq) =>
+                val env = Env(terminal.getCursorPosition()._1, prompt, byteSeq, autocomplete)
 
-              val (newState, out) =
-                (for {
-                  out1 <- handleKeypress[Repr]
-                  out2 <- AutoCompletion.updateCompletions[Repr]
-                } yield out1 + out2).run(state).run(env)
-              write(out)
-              newState
+                val (newState, out) =
+                  (for {
+                    out1 <- handleKeypress[Repr]
+                    out2 <- AutoCompletion.updateCompletions[Repr]
+                  } yield out1 + out2).run(state).run(env)
+                write(out)
+                newState
+              }
+              .result
+          )
+          .flatMap { result =>
+            autocomplete.fold(Sync[F].pure(result)) { ac =>
+              if (ac._1.strict && result._2.isEmpty) readInput(prompt, autocomplete)
+              else Sync[F].pure(result)
             }
-            .result
-        ).flatMap { result =>
-          autocomplete.fold(Sync[F].pure(result)) { ac =>
-            if (ac._1.strict && result._2.isEmpty) readInput(prompt, autocomplete)
-            else Sync[F].pure(result)
           }
-        }
 
       private[this] def handleKeypress[Repr: Eq]: StateUpdate[Repr] =
         StateUpdate { (state, env) =>

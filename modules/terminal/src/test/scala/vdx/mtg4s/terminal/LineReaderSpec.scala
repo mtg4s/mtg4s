@@ -39,8 +39,6 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
         "foobarbaz"
       ).filter(_.startsWith(str)).map(s => s -> s)
 
-
-
   implicit val debugger = Debugger.printlnDebugger(false)
 
   "LineReader.readline" when {
@@ -300,7 +298,6 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
         val (_, maybeResult) = lineReader.readLine(prompt, autocomplete).unsafeRunSync()
         maybeResult should be(Some("foo"))
       }
-
 
       "should not return the result when the input is modified" in {
         val (_, lineReader, prompt) =

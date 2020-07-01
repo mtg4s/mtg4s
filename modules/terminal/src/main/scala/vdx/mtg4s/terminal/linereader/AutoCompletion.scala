@@ -23,7 +23,13 @@ private[linereader] object AutoCompletion {
             selectedCompletion = findMatchingCandidate(completions, state.selectedCompletion)
           )
 
-          val out = printCompletionCandidates(completions, env.prompt, env.currentRow, cfg, newState.selectedCompletion.map(_._1))
+          val out = printCompletionCandidates(
+            completions,
+            env.prompt,
+            env.currentRow,
+            cfg,
+            newState.selectedCompletion.map(_._1)
+          )
           newState -> out
       }
     }
