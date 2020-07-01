@@ -14,18 +14,21 @@ object MtgJsonDB {
    */
   def apply[F[_]: Applicative, SetId: Eq](
     allPrintings: AllPrintings
-  )(implicit GSI: Getter[Set, SetId]): CardDB[F, Card, SetId] =
-    new CardDB[F, Card, SetId] {
+  )(implicit GSI: Getter[Set, SetId]): CardDB[F, CardAndSet, SetId] =
+    new CardDB[F, CardAndSet, SetId] {
 
-      def findMatchingByName(fragment: String): F[List[Card]] =
+      def findMatchingByName(fragment: String): F[List[CardAndSet]] =
         Applicative[F].pure(
-          allPrintings.values.toList.map(_.cards).flatten.filter(_.name.contains(fragment))
+          allPrintings.values.toList
+            .map(set => set.cards.map(card => CardAndSet(card = card, set = set)))
+            .flatten
+            .filter(_.card.name.contains(fragment))
         )
 
-      def findByNameAndSet(name: CardName, setId: SetId): F[Option[Card]] =
+      def findByNameAndSet(name: CardName, setId: SetId): F[Option[CardAndSet]] =
         Applicative[F].pure(allPrintings.values.find(GSI.get(_) === setId).flatMap(findCardInSet(name)))
 
-      private[this] def findCardInSet(name: CardName)(set: Set): Option[Card] =
-        set.cards.find(_.name === name)
+      private[this] def findCardInSet(name: CardName)(set: Set): Option[CardAndSet] =
+        set.cards.find(_.name === name).map(card => CardAndSet(card = card, set = set))
     }
 }

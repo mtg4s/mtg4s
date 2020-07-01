@@ -17,8 +17,10 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
   val escape: Int = 27
   val leftSquareBracket: Int = 91
   val tab: Int = 9
-  val leftArrow: List[Int] = List(escape, leftSquareBracket, 68)
-  val rightArrow: List[Int] = List(escape, leftSquareBracket, 67)
+  val cursorUp: List[Int] = List(escape, leftSquareBracket, 65)
+  val cursorDown: List[Int] = List(escape, leftSquareBracket, 66)
+  val cursorRight: List[Int] = List(escape, leftSquareBracket, 67)
+  val cursorLeft: List[Int] = List(escape, leftSquareBracket, 68)
   val delete: List[Int] = List(escape, leftSquareBracket, 51)
 
   def reader(keys: List[Int])(implicit debugger: Debugger): (TestTerminal, LineReader[IO], String) = {
@@ -62,7 +64,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
     "characters are added in the middle of the string (after moving the cursor)" should {
       "insert a character after the chursor when moving the cursor back" in {
         val (_, lineReader, prompt) = reader(
-          strToChars("This is a est!") ++ leftArrow ++ leftArrow ++ leftArrow ++ leftArrow ++
+          strToChars("This is a est!") ++ cursorLeft ++ cursorLeft ++ cursorLeft ++ cursorLeft ++
             List('t'.toInt, carriageReturn)
         )
 
@@ -71,7 +73,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
 
       "insert a character after the chursor when moving the cursor back then forward" in {
         val (_, lineReader, prompt) = reader(
-          strToChars("This is a est!") ++ repeat(leftArrow, 2) ++ rightArrow ++ repeat(leftArrow, 3) ++
+          strToChars("This is a est!") ++ repeat(cursorLeft, 2) ++ cursorRight ++ repeat(cursorLeft, 3) ++
             List('t'.toInt, carriageReturn)
         )
         lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
@@ -80,7 +82,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
       "display the text on the terminal properly when moving the cursor back then forward" in {
         val text = "This is a est!"
         val (term, lineReader, prompt) = reader(
-          strToChars(text) ++ repeat(leftArrow, 2) ++ rightArrow ++ repeat(leftArrow, 3) ++
+          strToChars(text) ++ repeat(cursorLeft, 2) ++ cursorRight ++ repeat(cursorLeft, 3) ++
             List('t'.toInt, carriageReturn)
         )
         lineReader.readLine(prompt).unsafeRunSync()
@@ -94,14 +96,14 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
     "one ore more characters are deleted" should {
       "delete the character before the cursor when pressing backspace" in {
         val (_, lineReader, prompt) =
-          reader(strToChars("This is a teest!") ++ repeat(leftArrow, 4) ++ List(backspace, carriageReturn))
+          reader(strToChars("This is a teest!") ++ repeat(cursorLeft, 4) ++ List(backspace, carriageReturn))
         lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
       }
 
       "update the output after deleting a charactere with backspace" in {
         val text = "This is a teest!"
         val (term, lineReader, prompt) =
-          reader(strToChars(text) ++ repeat(leftArrow, 4) ++ List(backspace, carriageReturn))
+          reader(strToChars(text) ++ repeat(cursorLeft, 4) ++ List(backspace, carriageReturn))
         lineReader.readLine(prompt).unsafeRunSync()
         TerminalHelper.parse(term.output) should be(
           TerminalState(
@@ -117,7 +119,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
     "one or more characters are deleted with the delete key" should {
       "delete the character after the cursor when pressing DELETE" in {
         val (_, lineReader, prompt) = reader(
-          strToChars("This is a tyest!") ++ repeat(leftArrow, 5) ++
+          strToChars("This is a tyest!") ++ repeat(cursorLeft, 5) ++
             delete ++ List(carriageReturn)
         )
         lineReader.readLine(prompt).unsafeRunSync should be("This is a test!")
@@ -125,7 +127,7 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
 
       "properly update the terminal when pressing DELETE" in {
         val (term, lineReader, prompt) = reader(
-          strToChars("This is a tyest!") ++ repeat(leftArrow, 5) ++
+          strToChars("This is a tyest!") ++ repeat(cursorLeft, 5) ++
             delete ++ List(carriageReturn)
         )
         lineReader.readLine(prompt).unsafeRunSync()
@@ -139,9 +141,9 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
       "update the terminal properly after multiple keypress" in {
         val (term, lineReader, prompt) = reader(
           strToChars("This is a tyest!") ++
-            repeat(leftArrow, 5) ++
+            repeat(cursorLeft, 5) ++
             delete ++
-            repeat(rightArrow, 3) ++
+            repeat(cursorRight, 3) ++
             strToChars(", no reallyyy") ++
             repeat(List(backspace), 2) ++
             List(carriageReturn)
@@ -212,6 +214,55 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
                 23 -> (repeat(" ", prompt.length()) + "foobar"),
                 24 -> (repeat(" ", prompt.length()) + "foobarbaz"),
                 25 -> s"${prompt}foo"
+              ),
+              List.empty,
+              List.empty
+            )
+          )
+        )
+      }
+
+      "select a candidate with the cursor down key" in {
+        implicit val debugger = Debugger.printlnDebugger(false)
+        val (term, lineReader, prompt) = reader(strToChars("f") ++ cursorDown ++ List(tab, carriageReturn))
+
+        lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+
+        val output = Try(TerminalHelper.parse(term.output)(debugger)).toEither
+
+        output should be(
+          Right(
+            TerminalState(
+              25 -> (6 + 1 + prompt.length()),
+              HashMap(
+                23 -> (repeat(" ", prompt.length()) + "foobar"),
+                24 -> (repeat(" ", prompt.length()) + "foobarbaz"),
+                25 -> s"${prompt}foobar"
+              ),
+              List.empty,
+              List.empty
+            )
+          )
+        )
+      }
+
+      "select a candidate with the cursor up key" in {
+        implicit val debugger = Debugger.printlnDebugger(false)
+        val (term, lineReader, prompt) =
+          reader(strToChars("f") ++ cursorDown ++ cursorDown ++ cursorUp ++ List(tab, carriageReturn))
+
+        lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+
+        val output = Try(TerminalHelper.parse(term.output)(debugger)).toEither
+
+        output should be(
+          Right(
+            TerminalState(
+              25 -> (6 + 1 + prompt.length()),
+              HashMap(
+                23 -> (repeat(" ", prompt.length()) + "foobar"),
+                24 -> (repeat(" ", prompt.length()) + "foobarbaz"),
+                25 -> s"${prompt}foobar"
               ),
               List.empty,
               List.empty

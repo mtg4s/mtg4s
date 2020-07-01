@@ -2,6 +2,7 @@ package vdx.mtg4s.mtgjson.raw
 
 import java.util.UUID
 
+import cats.kernel.Eq
 import enumeratum.EnumEntry.{Lowercase, Snakecase}
 import enumeratum._
 import io.circe.Decoder
@@ -88,6 +89,7 @@ case class Card(
 
 object Card {
   implicit val decoder: Decoder[Card] = deriveDecoder
+  implicit val eq: Eq[Card] = Eq.fromUniversalEquals
 
   sealed trait BorderColor extends EnumEntry with Lowercase
 

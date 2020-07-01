@@ -1,6 +1,7 @@
 package vdx.mtg4s.terminal.linereader
 
 import cats.Show
+import cats.instances.int._
 import cats.instances.list._
 import cats.instances.string._
 import cats.kernel.Eq
@@ -17,33 +18,46 @@ private[linereader] object AutoCompletion {
     StateUpdate { (state, env) =>
       env.autocomplete.fold(state -> "") {
         case (cfg, ac) =>
-          val candidates = ac.candidates(state.input)
-          val out = printCompletionCandidates(candidates, env.prompt, env.currentRow, cfg)
-          state.copy(
-            selected = state.selected.flatMap { selected =>
-              candidates.zipWithIndex.find {
-                case ((str, repr), _) => str === selected._2 && repr === selected._3
-              }
-            }.fold(candidates.headOption.map { case (str, repr) => (1, str, repr) }) {
-              case ((str, repr), index) => Option((index, str, repr))
-            }
-          ) -> out
+          val completions = ac.candidates(state.input).take(cfg.maxCandidates)
+          val newState = state.copy(
+            selected = findMatchingCandidate(completions, state.selected)
+          )
+
+          val out = printCompletionCandidates(completions, env.prompt, env.currentRow, cfg, newState.selected.map(_._1))
+          newState -> out
       }
     }
 
-  def printCompletionCandidates[Repr: Show](
-    candidates: List[(String, Repr)],
+  private[this] def findMatchingCandidate[Repr: Eq](
+    completions: List[(String, Repr)],
+    maybeSelected: Option[(Int, String, Repr)]
+  ): Option[(Int, String, Repr)] = {
+    maybeSelected
+      .flatMap(selected =>
+        completions.zipWithIndex.find {
+          case ((str, repr), _) => str === selected._2 && repr === selected._3
+        }
+      )
+      .fold(completions.headOption.map { case (str, repr) => (0, str, repr) }) {
+        case ((str, repr), index) => Option((index, str, repr))
+      }
+  }
+
+  private[this] def printCompletionCandidates[Repr: Show](
+    completions: List[(String, Repr)],
     prompt: String,
     row: Int,
-    cfg: AutoCompletionConfig
+    cfg: AutoCompletionConfig,
+    selected: Option[Int]
   ): String = {
-    candidates
-      .take(cfg.maxCandidates)
-      .reverse
-      .zipWithIndex
+    completions.zipWithIndex
       .foldLeft(savePos() + clearCompletionLines(row, cfg)) {
         case (o, ((_, candidate), index)) =>
-          o + move((row - 1) - index, prompt.length() + 1) ++ candidate.show
+          o + move((row - completions.length) + index, prompt.length() + 1) +
+            (
+              if (selected.filter(_ === index).isDefined) bold() + candidate.show + sgrReset()
+              else candidate.show
+            )
       } + restorePos()
   }
 

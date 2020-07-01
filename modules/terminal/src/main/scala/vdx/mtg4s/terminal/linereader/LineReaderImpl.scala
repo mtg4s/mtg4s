@@ -56,7 +56,7 @@ object LineReaderImpl {
 
                 val (newState, out) =
                   (for {
-                    out1 <- handleKeypress
+                    out1 <- handleKeypress[Repr]
                     out2 <- AutoCompletion.updateCompletions[Repr]
                   } yield out1 + out2).run(state).run(env)
                 write(out)
@@ -65,7 +65,7 @@ object LineReaderImpl {
               .result
           )
 
-      private[this] def handleKeypress[Repr]: StateUpdate[Repr] =
+      private[this] def handleKeypress[Repr: Eq]: StateUpdate[Repr] =
         StateUpdate { (state, env) =>
           val newState = state.prependKeys(env.byteSeq)
           val readerStart = env.prompt.length + 1
@@ -117,16 +117,40 @@ object LineReaderImpl {
                 readerStart + newState.column
               ))
 
-            case Chain(9) =>
+            // Completion related cases
+            case Chain(9) => // Tab
               val s = newState.copy(
                 input = state.selected.fold(state.input)(_._2),
                 column = state.selected.fold(state.column)(_._2.length())
               )
               s -> (move(env.currentRow, readerStart) + clearLine() + s.input)
 
+            case Chain(27, 91, 65) => // Up
+              newState.copy(selected = findCompletionOrElseCurrent(state, -1, env)) -> ""
+
+            case Chain(27, 91, 66) => // Down
+              newState.copy(selected = findCompletionOrElseCurrent(state, 1, env)) -> ""
+
             case _ => newState -> ""
           }
         }
     }
 
+  private def findCompletionOrElseCurrent[Repr](
+    state: LineReaderState[Repr],
+    offset: Int,
+    env: Env[Repr]
+  ): Option[(Int, String, Repr)] =
+    state.selected.flatMap {
+      case old @ (index, _, _) =>
+        env.autocomplete.map {
+          case (config, source) =>
+            source
+              .candidates(state.input)
+              .take(config.maxCandidates)
+              .zipWithIndex
+              .map { case ((input, repr), i) => (i, input, repr) }
+              .applyOrElse(index + offset, (_: Int) => old)
+        }
+    }
 }

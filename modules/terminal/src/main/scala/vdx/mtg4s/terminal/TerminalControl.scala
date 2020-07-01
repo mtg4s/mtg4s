@@ -17,6 +17,10 @@ object TerminalControl {
 
   def restorePos() = esc("8")
 
+  def sgrReset() = csi("0m")
+
+  def bold() = csi("1m")
+
   @SuppressWarnings(Array("DisableSyntax.throw"))
   def move(row: Int, column: Int) =
     if (row < 0 || column < 0) throw new Exception(s"Row and column cannot be less than 0: ($row, $column) ")

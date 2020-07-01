@@ -2,6 +2,7 @@ package vdx.mtg4s.mtgjson.raw
 
 import java.time.LocalDate
 
+import cats.kernel.Eq
 import enumeratum.EnumEntry.Snakecase
 import enumeratum._
 import io.circe.Decoder
@@ -37,6 +38,7 @@ case class Set(
 object Set {
 
   implicit val decoder: Decoder[Set] = deriveDecoder
+  implicit val eq: Eq[Set] = Eq.fromUniversalEquals
 
   sealed trait SetType extends EnumEntry with Snakecase
 
