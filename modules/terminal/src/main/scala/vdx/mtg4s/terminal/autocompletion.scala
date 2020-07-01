@@ -5,9 +5,14 @@ trait AutoCompletionSource[Repr] {
 }
 
 case class AutoCompletionConfig(
-  maxCandidates: Int
+  maxCandidates: Int,
+  strict: Boolean,
 )
 
 object AutoCompletionConfig {
-  implicit val defaultAutoCompletionConfig: AutoCompletionConfig = AutoCompletionConfig(5)
+  implicit val defaultAutoCompletionConfig: AutoCompletionConfig = 
+    AutoCompletionConfig(
+      maxCandidates = 5,
+      strict = false
+    )
 }

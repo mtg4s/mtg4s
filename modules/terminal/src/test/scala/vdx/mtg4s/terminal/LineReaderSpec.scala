@@ -28,6 +28,19 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
 
     (terminal, LineReader(terminal), "prompt > ")
   }
+
+  val autocomplete: AutoCompletionSource[String] =
+    str =>
+      List(
+        "foo",
+        "bar",
+        "baz",
+        "foobar",
+        "foobarbaz"
+      ).filter(_.startsWith(str)).map(s => s -> s)
+
+
+
   implicit val debugger = Debugger.printlnDebugger(false)
 
   "LineReader.readline" when {
@@ -162,16 +175,6 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
     }
 
     "autocompletion is provided" should {
-
-      val autocomplete: AutoCompletionSource[String] = str =>
-        List(
-          "foo",
-          "bar",
-          "baz",
-          "foobar",
-          "foobarbaz"
-        ).filter(_.startsWith(str)).map(s => s -> s)
-
       "display available completions" in {
         implicit val debugger = Debugger.printlnDebugger(false)
         val (term, lineReader, prompt) = reader(strToChars("foo") ++ List(carriageReturn))
@@ -198,7 +201,6 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
       }
 
       "select the first candidate when the TAB key is pressed" in {
-        implicit val debugger = Debugger.printlnDebugger(false)
         val (term, lineReader, prompt) = reader(strToChars("f") ++ List(tab, carriageReturn))
 
         lineReader.readLine(prompt, autocomplete).unsafeRunSync()
@@ -223,7 +225,6 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
       }
 
       "select a candidate with the cursor down key" in {
-        implicit val debugger = Debugger.printlnDebugger(false)
         val (term, lineReader, prompt) = reader(strToChars("f") ++ cursorDown ++ List(tab, carriageReturn))
 
         lineReader.readLine(prompt, autocomplete).unsafeRunSync()
@@ -247,7 +248,6 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
       }
 
       "select a candidate with the cursor up key" in {
-        implicit val debugger = Debugger.printlnDebugger(false)
         val (term, lineReader, prompt) =
           reader(strToChars("f") ++ cursorDown ++ cursorDown ++ cursorUp ++ List(tab, carriageReturn))
 
@@ -272,7 +272,6 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
       }
 
       "should append new characters properly after selecting a candidate" in {
-        implicit val debugger = Debugger.printlnDebugger(false)
         val (term, lineReader, prompt) =
           reader(strToChars("f") ++ List(tab) ++ strToChars(" bar") ++ List(carriageReturn))
 
@@ -293,6 +292,52 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
           )
         )
       }
+
+      "should return the result when the input is not modified" in {
+        val (_, lineReader, prompt) =
+          reader(strToChars("f") ++ List(tab) ++ cursorDown ++ cursorDown ++ List(carriageReturn))
+
+        val (_, maybeResult) = lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+        maybeResult should be(Some("foo"))
+      }
+
+
+      "should not return the result when the input is modified" in {
+        val (_, lineReader, prompt) =
+          reader(strToChars("f") ++ List(tab) ++ strToChars("b") ++ List(carriageReturn))
+
+        val (_, maybeResult) = lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+        maybeResult should be(None)
+      }
+    }
+
+    "autocompletion is provided and it is configured to be strict" should {
+      "not provide a result while a completion candidate is not selected" in {
+        val (_, lineReader, prompt) =
+          reader(strToChars("f") ++ List(carriageReturn))
+
+        implicit val acConfig = AutoCompletionConfig(
+          maxCandidates = 10,
+          strict = true
+        )
+
+        val result = lineReader.readLine(prompt, autocomplete).attempt.unsafeRunSync()
+        result should be(Left(TestTerminal.endOfInputException))
+      }
+
+      "provide a result while a completion candidate is selected" in {
+        val (_, lineReader, prompt) =
+          reader(strToChars("f") ++ List(tab, carriageReturn))
+
+        implicit val acConfig = AutoCompletionConfig(
+          maxCandidates = 10,
+          strict = true
+        )
+
+        val result = lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+        result should be(("foo", Some("foo")))
+      }
+
     }
   }
 }

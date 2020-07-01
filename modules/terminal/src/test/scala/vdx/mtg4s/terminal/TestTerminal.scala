@@ -6,6 +6,8 @@ trait TestTerminal extends Terminal {
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.var", "scalafix:DisableSyntax.throw"))
 object TestTerminal {
+  val endOfInputException = new RuntimeException("There aren't more keys")
+
   def apply(keys: List[Int])(implicit debugger: Debugger): TestTerminal =
     new TestTerminal {
       private[this] var _keys = keys
@@ -21,7 +23,7 @@ object TestTerminal {
           flush()
           _keys match {
             case x :: xs => { _keys = xs; x }
-            case Nil     => throw new RuntimeException("There aren't more keys")
+            case Nil     => throw endOfInputException
           }
         }
       }

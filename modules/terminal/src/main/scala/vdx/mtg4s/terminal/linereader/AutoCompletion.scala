@@ -20,10 +20,10 @@ private[linereader] object AutoCompletion {
         case (cfg, ac) =>
           val completions = ac.candidates(state.input).take(cfg.maxCandidates)
           val newState = state.copy(
-            selected = findMatchingCandidate(completions, state.selected)
+            selectedCompletion = findMatchingCandidate(completions, state.selectedCompletion)
           )
 
-          val out = printCompletionCandidates(completions, env.prompt, env.currentRow, cfg, newState.selected.map(_._1))
+          val out = printCompletionCandidates(completions, env.prompt, env.currentRow, cfg, newState.selectedCompletion.map(_._1))
           newState -> out
       }
     }

@@ -45,25 +45,36 @@ object LineReaderImpl {
         autocomplete: Option[(AutoCompletionConfig, AutoCompletionSource[Repr])]
       ): F[(String, Option[Repr])] =
         Sync[F].delay(write(prompt)) >>
-          Sync[F].delay(
-            LazyList
-              .continually(reader.readchar())
-              .takeWhile(_ =!= 13)
-              .map(Chain.one)
-              .map(readSequence)
-              .foldLeft(LineReaderState.empty[Repr]) { (state, byteSeq) =>
-                val env = Env(terminal.getCursorPosition()._1, prompt, byteSeq, autocomplete)
+          readInput(prompt, autocomplete)
 
-                val (newState, out) =
-                  (for {
-                    out1 <- handleKeypress[Repr]
-                    out2 <- AutoCompletion.updateCompletions[Repr]
-                  } yield out1 + out2).run(state).run(env)
-                write(out)
-                newState
-              }
-              .result
-          )
+      private def readInput[Repr: Show: Eq](
+        prompt: String,
+        autocomplete: Option[(AutoCompletionConfig, AutoCompletionSource[Repr])]
+      ): F[(String, Option[Repr])] =
+        Sync[F].delay(
+          LazyList
+            .continually(reader.readchar())
+            .takeWhile(_ =!= 13)
+            .map(Chain.one)
+            .map(readSequence)
+            .foldLeft(LineReaderState.empty[Repr]) { (state, byteSeq) =>
+              val env = Env(terminal.getCursorPosition()._1, prompt, byteSeq, autocomplete)
+
+              val (newState, out) =
+                (for {
+                  out1 <- handleKeypress[Repr]
+                  out2 <- AutoCompletion.updateCompletions[Repr]
+                } yield out1 + out2).run(state).run(env)
+              write(out)
+              newState
+            }
+            .result
+        ).flatMap { result =>
+          autocomplete.fold(Sync[F].pure(result)) { ac =>
+            if (ac._1.strict && result._2.isEmpty) readInput(prompt, autocomplete)
+            else Sync[F].pure(result)
+          }
+        }
 
       private[this] def handleKeypress[Repr: Eq]: StateUpdate[Repr] =
         StateUpdate { (state, env) =>
@@ -120,16 +131,17 @@ object LineReaderImpl {
             // Completion related cases
             case Chain(9) => // Tab
               val s = newState.copy(
-                input = state.selected.fold(state.input)(_._2),
-                column = state.selected.fold(state.column)(_._2.length())
+                input = state.selectedCompletion.fold(state.input)(_._2),
+                column = state.selectedCompletion.fold(state.column)(_._2.length()),
+                completionResult = newState.selectedCompletion.map(_._3)
               )
               s -> (move(env.currentRow, readerStart) + clearLine() + s.input)
 
             case Chain(27, 91, 65) => // Up
-              newState.copy(selected = findCompletionOrElseCurrent(state, -1, env)) -> ""
+              newState.copy(selectedCompletion = findCompletionOrElseCurrent(state, -1, env)) -> ""
 
             case Chain(27, 91, 66) => // Down
-              newState.copy(selected = findCompletionOrElseCurrent(state, 1, env)) -> ""
+              newState.copy(selectedCompletion = findCompletionOrElseCurrent(state, 1, env)) -> ""
 
             case _ => newState -> ""
           }
@@ -141,7 +153,7 @@ object LineReaderImpl {
     offset: Int,
     env: Env[Repr]
   ): Option[(Int, String, Repr)] =
-    state.selected.flatMap {
+    state.selectedCompletion.flatMap {
       case old @ (index, _, _) =>
         env.autocomplete.map {
           case (config, source) =>
