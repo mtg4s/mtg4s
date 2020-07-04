@@ -53,7 +53,7 @@ private[linereader] object AutoCompletion {
     completions: List[(String, Repr)],
     prompt: String,
     row: Int,
-    cfg: AutoCompletionConfig,
+    cfg: AutoCompletionConfig[Repr],
     selected: Option[Int]
   ): String = {
     completions.zipWithIndex
@@ -67,6 +67,6 @@ private[linereader] object AutoCompletion {
       } + restorePos()
   }
 
-  def clearCompletionLines(row: Int, cfg: AutoCompletionConfig): String =
+  def clearCompletionLines[Repr](row: Int, cfg: AutoCompletionConfig[Repr]): String =
     (1 to cfg.maxCandidates).toList.foldMap(i => move(row - i, 1) + clearLine())
 }

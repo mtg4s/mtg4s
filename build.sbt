@@ -32,7 +32,8 @@ lazy val publishSettings = List(
 lazy val defaultSettings = Seq(
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
   addCompilerPlugin(scalafixSemanticdb),
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
+  addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.11.0" cross CrossVersion.full),
+  addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1")
 )
 
 lazy val core = (project in file("modules/core"))

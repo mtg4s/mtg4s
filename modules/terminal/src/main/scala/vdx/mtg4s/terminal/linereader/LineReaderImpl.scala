@@ -37,28 +37,27 @@ object LineReaderImpl {
       def readLine[Repr: Show: Eq](
         prompt: String,
         autocomplete: AutoCompletionSource[Repr]
-      )(implicit cfg: AutoCompletionConfig): F[(String, Option[Repr])] =
+      )(implicit cfg: AutoCompletionConfig[Repr]): F[(String, Option[Repr])] =
         readLine(prompt, Option(cfg -> autocomplete))
 
       private def readLine[Repr: Show: Eq](
         prompt: String,
-        autocomplete: Option[(AutoCompletionConfig, AutoCompletionSource[Repr])]
+        autocomplete: Option[(AutoCompletionConfig[Repr], AutoCompletionSource[Repr])]
       ): F[(String, Option[Repr])] =
         Sync[F].delay(write(prompt)) >>
-          readInput(prompt, autocomplete)
+          readInput(LineReaderState.empty, prompt, autocomplete)
 
       private def readInput[Repr: Show: Eq](
+        state: LineReaderState[Repr],
         prompt: String,
-        autocomplete: Option[(AutoCompletionConfig, AutoCompletionSource[Repr])]
+        autocomplete: Option[(AutoCompletionConfig[Repr], AutoCompletionSource[Repr])]
       ): F[(String, Option[Repr])] =
         Sync[F]
           .delay(
             LazyList
-              .continually(reader.readchar())
-              .takeWhile(_ =!= 13)
-              .map(Chain.one)
-              .map(readSequence)
-              .foldLeft(LineReaderState.empty[Repr]) { (state, byteSeq) =>
+              .continually(readSequence(Chain.one(reader.readchar())))
+              .takeWhile(_ =!= Chain(13))
+              .foldLeft(state) { (state, byteSeq) =>
                 val env = Env(terminal.getCursorPosition()._1, prompt, byteSeq, autocomplete)
 
                 val (newState, out) =
@@ -69,12 +68,11 @@ object LineReaderImpl {
                 write(out)
                 newState
               }
-              .result
           )
-          .flatMap { result =>
-            autocomplete.fold(Sync[F].pure(result)) { ac =>
-              if (ac._1.strict && result._2.isEmpty) readInput(prompt, autocomplete)
-              else Sync[F].pure(result)
+          .flatMap { state =>
+            autocomplete.fold(Sync[F].pure(state.result)) { ac =>
+              if (ac._1.strict && state.result._2.isEmpty) readInput(state, prompt, autocomplete)
+              else Sync[F].pure(state.result)
             }
           }
 
@@ -109,7 +107,9 @@ object LineReaderImpl {
 
             case Chain(c) if ((32 <= c && c <= 126) || 127 < c) =>
               val (_front, _back) = newState.input.splitAt(newState.column)
-              newState.moveColumnBy(1).withInput(_front + c.toChar + _back) -> (clearLine() + c.toChar + _back + move(
+              newState
+                .moveColumnBy(1)
+                .withInput(_front + c.toChar + _back, env, write) -> (clearLine() + c.toChar + _back + move(
                 env.currentRow,
                 readerStart + newState.column + 1
               ))
@@ -117,7 +117,7 @@ object LineReaderImpl {
             case Chain(127) if newState.column > 0 => // Backspace
               val (_front, _back) = newState.input.splitAt(newState.column)
               val newFront = _front.dropRight(1)
-              newState.moveColumnBy(-1).withInput(newFront + _back) -> (back() + clearLine() + _back + move(
+              newState.moveColumnBy(-1).withInput(newFront + _back, env, write) -> (back() + clearLine() + _back + move(
                 env.currentRow,
                 readerStart + newState.column - 1
               ))
@@ -125,7 +125,7 @@ object LineReaderImpl {
             case Chain(27, 91, 51) => // Delete
               val (_front, _back) = newState.input.splitAt(newState.column)
               val newBack = _back.drop(1)
-              newState.withInput(_front + newBack) -> (clearLine() + newBack + move(
+              newState.withInput(_front + newBack, env, write) -> (clearLine() + newBack + move(
                 env.currentRow,
                 readerStart + newState.column
               ))
@@ -137,6 +137,9 @@ object LineReaderImpl {
                 column = state.selectedCompletion.fold(state.column)(_._2.length()),
                 completionResult = newState.selectedCompletion.map(_._3)
               )
+              env.autocomplete.foreach {
+                case (config, _) => config.onResultChange(s.completionResult, write)
+              }
               s -> (move(env.currentRow, readerStart) + clearLine() + s.input)
 
             case Chain(27, 91, 65) => // Up

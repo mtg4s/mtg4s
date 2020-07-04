@@ -1,6 +1,7 @@
 package vdx.mtg4s.terminal
 
 import scala.collection.immutable.HashMap
+import scala.collection.mutable
 import scala.util.Try
 
 import cats.effect.IO
@@ -309,14 +310,17 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
     }
 
     "autocompletion is provided and it is configured to be strict" should {
+      implicit val acConfig: AutoCompletionConfig[String] =
+        AutoCompletionConfig
+          .defaultAutoCompletionConfig[String]
+          .copy(
+            maxCandidates = 10,
+            strict = true
+          )
+
       "not provide a result while a completion candidate is not selected" in {
         val (_, lineReader, prompt) =
           reader(strToChars("f") ++ List(carriageReturn))
-
-        implicit val acConfig = AutoCompletionConfig(
-          maxCandidates = 10,
-          strict = true
-        )
 
         val result = lineReader.readLine(prompt, autocomplete).attempt.unsafeRunSync()
         result should be(Left(TestTerminal.endOfInputException))
@@ -326,15 +330,69 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
         val (_, lineReader, prompt) =
           reader(strToChars("f") ++ List(tab, carriageReturn))
 
-        implicit val acConfig = AutoCompletionConfig(
-          maxCandidates = 10,
-          strict = true
-        )
-
-        val result = lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+        val result = lineReader.readLine[String](prompt, autocomplete).unsafeRunSync()
         result should be(("foo", Some("foo")))
       }
 
+      "provide the correct result while a completion candidate is selected after hitting enter" in {
+        val (term, lineReader, prompt) =
+          reader(
+            strToChars("f") ++ List(carriageReturn) ++ strToChars("oob") ++ cursorDown ++ List(tab, carriageReturn)
+          )
+
+        val result = lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+        result should be(("foobarbaz", Some("foobarbaz")))
+
+        val output = Try(TerminalHelper.parse(term.output)(debugger)).toEither
+        output should be(
+          Right(
+            TerminalState(
+              25 -> (9 + 1 + prompt.length()),
+              HashMap(
+                24 -> (repeat(" ", prompt.length()) + "foobarbaz"),
+                25 -> s"${prompt}foobarbaz"
+              ),
+              List.empty,
+              List.empty
+            )
+          )
+        )
+
+      }
+    }
+
+    "an onResultChange handler is provided" should {
+      def config(logs: mutable.ListBuffer[Option[String]]) =
+        AutoCompletionConfig.defaultAutoCompletionConfig.copy(
+          maxCandidates = 10,
+          strict = true,
+          onResultChange = (maybeResult: Option[String], _) => logs.addOne(maybeResult)
+        )
+
+      "call the handler with the selected completion each time a completions is selected with tab key" in {
+        val (_, lineReader, prompt) =
+          reader(strToChars("f") ++ List(tab) ++ cursorDown ++ List(tab, carriageReturn))
+
+        val logs = mutable.ListBuffer.empty[Option[String]]
+        implicit val cfg = config(logs)
+        lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+
+        logs.toList should be(List(Some("foo"), Some("foobar")))
+
+      }
+
+      "Call the handler when a completion is unselected" in {
+        val (_, lineReader, prompt) =
+          reader(
+            strToChars("f") ++ List(tab) ++ strToChars("b") ++ List(tab) ++ strToChars("b") ++ List(tab, carriageReturn)
+          )
+
+        val logs = mutable.ListBuffer.empty[Option[String]]
+        implicit val cfg = config(logs)
+        lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+
+        logs.toList should be(List(Some("foo"), None, Some("foobar"), None, Some("foobarbaz")))
+      }
     }
   }
 }
