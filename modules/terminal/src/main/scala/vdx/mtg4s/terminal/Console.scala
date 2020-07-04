@@ -7,6 +7,7 @@ import cats.syntax.apply._
 import vdx.mtg4s.terminal.{AutoCompletionConfig, AutoCompletionSource}
 
 trait Console[F[_]] {
+  def putStr(text: String): F[Unit]
   def putStrLn(): F[Unit]
   def putStrLn(text: String): F[Unit]
   def readLine(prompt: String): F[String]
@@ -21,6 +22,9 @@ trait Console[F[_]] {
 object Console {
   def apply[F[_]: Sync](terminal: Terminal, lineReader: LineReader[F]): Console[F] =
     new Console[F] {
+      def putStr(text: String): F[Unit] =
+        write(text)
+
       def putStrLn(): F[Unit] =
         putStrLn("")
 
