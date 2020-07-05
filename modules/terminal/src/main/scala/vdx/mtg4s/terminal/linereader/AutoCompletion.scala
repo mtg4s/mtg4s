@@ -9,6 +9,7 @@ import cats.syntax.eq._
 import cats.syntax.foldable._
 import cats.syntax.show._
 import vdx.mtg4s.terminal.AutoCompletionConfig
+import vdx.mtg4s.terminal.AutoCompletionConfig.Up
 import vdx.mtg4s.terminal.TerminalControl._
 import vdx.mtg4s.terminal.linereader.LineReaderState.StateUpdate
 
@@ -59,7 +60,7 @@ private[linereader] object AutoCompletion {
     completions.zipWithIndex
       .foldLeft(savePos() + clearCompletionLines(row, cfg)) {
         case (o, ((_, candidate), index)) =>
-          o + move((row - completions.length) + index, prompt.length() + 1) +
+          o + move(completionRow(cfg, row, index, completions.length), prompt.length() + 1) +
             (
               if (selected.filter(_ === index).isDefined) bold() + candidate.show + sgrReset()
               else candidate.show
@@ -67,6 +68,14 @@ private[linereader] object AutoCompletion {
       } + restorePos()
   }
 
-  def clearCompletionLines[Repr](row: Int, cfg: AutoCompletionConfig[Repr]): String =
-    (1 to cfg.maxCandidates).toList.foldMap(i => move(row - i, 1) + clearLine())
+  private[this] def completionRow[Repr](
+    config: AutoCompletionConfig[Repr],
+    inputRow: Int,
+    index: Int,
+    completions: Int
+  ) =
+    (if (config.direction === Up) inputRow - completions else inputRow + 1) + index
+
+  private[this] def clearCompletionLines[Repr](row: Int, cfg: AutoCompletionConfig[Repr]): String =
+    (1 to cfg.maxCandidates).toList.foldMap(i => move(row + (if (cfg.direction === Up) -i else i), 1) + clearLine())
 }

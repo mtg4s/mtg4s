@@ -9,6 +9,7 @@ import cats.instances.list._
 import cats.instances.string._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import vdx.mtg4s.terminal.AutoCompletionConfig.Down
 import vdx.mtg4s.terminal.AutoCompletionSource
 import vdx.mtg4s.terminal.TerminalHelper.TerminalState
 
@@ -306,6 +307,37 @@ class LineReaderSpec extends AnyWordSpec with Matchers {
 
         val (_, maybeResult) = lineReader.readLine(prompt, autocomplete).unsafeRunSync()
         maybeResult should be(None)
+      }
+
+      "display the completions below the prompt in configured" in {
+        val (term, lineReader, prompt) = reader(strToChars("foo") ++ List(carriageReturn))
+
+        implicit val acConfig: AutoCompletionConfig[String] =
+          AutoCompletionConfig
+            .defaultAutoCompletionConfig[String]
+            .copy(
+              direction = Down
+            )
+
+        lineReader.readLine(prompt, autocomplete).unsafeRunSync()
+
+        val output = Try(TerminalHelper.parse(term.output)(debugger)).toEither
+
+        output should be(
+          Right(
+            TerminalState(
+              25 -> (3 + 1 + prompt.length()),
+              HashMap(
+                25 -> s"${prompt}foo",
+                26 -> (repeat(" ", prompt.length()) + "foo"),
+                27 -> (repeat(" ", prompt.length()) + "foobar"),
+                28 -> (repeat(" ", prompt.length()) + "foobarbaz")
+              ),
+              List.empty,
+              List.empty
+            )
+          )
+        )
       }
     }
 

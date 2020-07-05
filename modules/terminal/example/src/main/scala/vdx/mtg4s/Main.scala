@@ -2,6 +2,7 @@ package vdx.mtg4s
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.instances.string._
+import vdx.mtg4s.terminal.AutoCompletionConfig.Down
 import vdx.mtg4s.terminal._
 
 object Main extends IOApp {
@@ -21,19 +22,21 @@ object Main extends IOApp {
         ).filter(_.startsWith(str)).map(s => s -> s)
 
       implicit val acConfig: AutoCompletionConfig[String] = AutoCompletionConfig.defaultAutoCompletionConfig.copy(
-        onResultChange = (maybeString, write) => write(
-          TerminalControl.savePos() +
-            TerminalControl.down(1) +
-            TerminalControl.back(999) +
-            TerminalControl.clearLine() +
-            s"Currently selected: $maybeString" +
-            TerminalControl.restorePos()
-        )
+        direction = Down,
+        onResultChange = (maybeString, write) =>
+          write(
+            TerminalControl.savePos() +
+              TerminalControl.down(1) +
+              TerminalControl.back(999) +
+              TerminalControl.clearLine() +
+              s"Currently selected: $maybeString" +
+              TerminalControl.restorePos()
+          )
       )
 
       for {
         _ <- console.clearScreen()
-        _ <- console.moveToLastLine()
+//        _ <- console.moveToLastLine()
         _ <- console.putStrLn(TerminalControl.up())
         _ <- console.readLine("prompt > ", autocomplete)
       } yield ExitCode.Success
