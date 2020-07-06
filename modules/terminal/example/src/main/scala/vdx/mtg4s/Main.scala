@@ -26,7 +26,7 @@ object Main extends IOApp {
         onResultChange = (maybeString, write) =>
           write(
             TerminalControl.savePos() +
-              TerminalControl.down(1) +
+              TerminalControl.up(1) +
               TerminalControl.back(999) +
               TerminalControl.clearLine() +
               s"Currently selected: $maybeString" +

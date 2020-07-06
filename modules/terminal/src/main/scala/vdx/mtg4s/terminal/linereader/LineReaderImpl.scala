@@ -58,13 +58,13 @@ object LineReaderImpl {
               .continually(readSequence(Chain.one(reader.readchar())))
               .takeWhile(_ =!= Chain(13))
               .foldLeft(state) { (state, byteSeq) =>
-                val env = Env(terminal.getCursorPosition()._1, prompt, byteSeq, autocomplete)
+                val env = Env(terminal.getCursorPosition()._1, prompt, autocomplete)
 
-                val (newState, out) =
+                val (_, newState, out) =
                   (for {
-                    out1 <- handleKeypress[Repr]
+                    out1 <- handleKeypress[Repr](byteSeq)
                     out2 <- AutoCompletion.updateCompletions[Repr]
-                  } yield out1 + out2).run(state).run(env)
+                  } yield out1 + out2).run(env, state).value
                 write(out)
                 newState
               }
@@ -76,9 +76,9 @@ object LineReaderImpl {
             }
           }
 
-      private[this] def handleKeypress[Repr: Eq]: StateUpdate[Repr] =
-        StateUpdate { (state, env) =>
-          val newState = state.prependKeys(env.byteSeq)
+      private[this] def handleKeypress[Repr: Eq](byteSeq: Chain[Int]): StateUpdate[Repr, String] =
+        StateUpdate { (env, state) =>
+          val newState = state.prependKeys(byteSeq)
           val readerStart = env.prompt.length + 1
 
           // def home() = {
@@ -92,7 +92,7 @@ object LineReaderImpl {
           //   (history, cursor, oldStr)
           // }
 
-          env.byteSeq match {
+          byteSeq match {
             case Chain(27, 91, 68) if newState.column > 0 =>
               newState.moveColumnBy(-1) -> back()
 
