@@ -45,12 +45,11 @@ object LineReaderImpl {
         autocomplete: Option[(AutoCompletionConfig[Repr], AutoCompletionSource[Repr])]
       ): F[(String, Option[Repr])] =
         Sync[F].delay(write(prompt)) >>
-          readInput(LineReaderState.empty, prompt, autocomplete)
+          readInput(LineReaderState.empty, Env(terminal.getCursorPosition()._1, prompt, autocomplete))
 
       private def readInput[Repr: Show: Eq](
         state: LineReaderState[Repr],
-        prompt: String,
-        autocomplete: Option[(AutoCompletionConfig[Repr], AutoCompletionSource[Repr])]
+        env: Env[Repr]
       ): F[(String, Option[Repr])] =
         Sync[F]
           .delay(
@@ -58,20 +57,18 @@ object LineReaderImpl {
               .continually(readSequence(Chain.one(reader.readchar())))
               .takeWhile(_ =!= Chain(13))
               .foldLeft(state) { (state, byteSeq) =>
-                val env = Env(terminal.getCursorPosition()._1, prompt, autocomplete)
-
-                val (_, newState, out) =
-                  (for {
-                    out1 <- handleKeypress[Repr](byteSeq)
-                    out2 <- AutoCompletion.updateCompletions[Repr]
-                  } yield out1 + out2).run(env, state).value
-                write(out)
-                newState
+                (for {
+                  out1 <- handleKeypress[Repr](byteSeq)
+                  out2 <- AutoCompletion.updateCompletions[Repr]
+                  _    <- StateUpdate.now(write(out1 + out2))
+                } yield ())
+                  .runS(env, state)
+                  .value
               }
           )
           .flatMap { state =>
-            autocomplete.fold(Sync[F].pure(state.result)) { ac =>
-              if (ac._1.strict && state.result._2.isEmpty) readInput(state, prompt, autocomplete)
+            env.autocomplete.fold(Sync[F].pure(state.result)) { ac =>
+              if (ac._1.strict && state.result._2.isEmpty) readInput(state, env)
               else Sync[F].pure(state.result)
             }
           }

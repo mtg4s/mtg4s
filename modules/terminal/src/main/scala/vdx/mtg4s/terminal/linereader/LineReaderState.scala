@@ -32,6 +32,9 @@ private[linereader] object LineReaderState {
     def ask[Repr]: StateUpdate[Repr, Env[Repr]] =
       RWS.ask[Env[Repr], Unit, LineReaderState[Repr]]
 
+    def now[Repr, A](a: => A): StateUpdate[Repr, A] =
+      RWST.liftF(Eval.now(a))
+
     def pure[Repr, A](a: A): StateUpdate[Repr, A] =
       RWS.pure(a)
 
