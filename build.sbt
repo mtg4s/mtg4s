@@ -8,6 +8,8 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
+ThisBuild / resolvers += Resolver.sonatypeRepo("snapshots")
+
 val catsVersion = "2.1.1"
 val catsEffectVersion = "2.1.2"
 val fs2Version = "2.3.0"
@@ -18,6 +20,7 @@ val shapelessVersion = "2.3.3"
 val monocleVersion = "2.0.3"
 val kantanCsvVersion = "0.6.0"
 val jlineVersion = "3.14.0"
+val console4sVersion = "0.0.0+2-13a4d433+20200715-2149-SNAPSHOT"
 
 val scalatestVersion = "3.1.1"
 val scalatestScalacheckVersion = "3.1.1.1"
@@ -107,34 +110,21 @@ lazy val `mtgjson-allprintings` = (project in file("modules/mtgjson-allprintings
     )
   )
 
-lazy val terminal = (project in file("modules/terminal"))
+lazy val `terminal-extras` = (project in file("modules/terminal"))
   .settings(
-    name := "mtg4s-terminal",
+    name := "mtg4s-terminal-extras",
     publishSettings,
     defaultSettings,
     libraryDependencies ++= Seq(
-      "org.typelevel"              %% "cats-core"           % catsVersion,
-      "org.typelevel"              %% "cats-effect"         % catsEffectVersion,
-      "org.jline"                  % "jline-terminal"       % jlineVersion,
-      "org.jline"                  % "jline-terminal-jansi" % jlineVersion,
-      "org.jline"                  % "jline-reader"         % jlineVersion,
-      "com.github.julien-truffaut" %% "monocle-core"        % monocleVersion,
-      "org.scalatest"              %% "scalatest"           % scalatestVersion % Test
+      "org.typelevel"              %% "cats-core"         % catsVersion,
+      "org.typelevel"              %% "cats-effect"       % catsEffectVersion,
+      "com.gaborpihaj"             %% "console4s"         % console4sVersion,
+      "com.github.julien-truffaut" %% "monocle-core"      % monocleVersion,
+      "com.gaborpihaj"             %% "console4s-testkit" % console4sVersion % Test,
+      "org.scalatest"              %% "scalatest"         % scalatestVersion % Test
     )
   )
   .dependsOn(core % "compile->compile;test->test")
-
-lazy val `terminal-example` = (project in file("modules/terminal/example"))
-  .settings(
-    name := "mtg4s-terminal-example",
-    publishSettings,
-    defaultSettings,
-    libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectVersion
-    )
-  )
-  .dependsOn(terminal)
 
 lazy val root = (project in file("."))
   .settings(
@@ -145,8 +135,7 @@ lazy val root = (project in file("."))
     inventory,
     mtgjson,
     `mtgjson-allprintings`,
-    terminal,
-    `terminal-example`
+    `terminal-extras`
   )
 
 addCommandAlias("fmt", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt")

@@ -1,8 +1,8 @@
 package vdx.mtg4s.terminal.extras
 
 import cats.{~>, Id}
+import com.gaborpihaj.console4s.AutoCompletionSource
 import monocle.Getter
-import vdx.mtg4s.terminal.AutoCompletionSource
 import vdx.mtg4s.{CardDB, CardName}
 
 object CardNameAutoCompletionSource {

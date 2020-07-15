@@ -3,11 +3,11 @@ package vdx.mtg4s.terminal.extras
 import cats.Id
 import cats.arrow.FunctionK
 import cats.effect.IO
+import com.gaborpihaj.console4s.{Console, Debugger, LineReader, TestTerminal}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vdx.mtg4s.TestCardDB
 import vdx.mtg4s.TestCardDB.Card
-import vdx.mtg4s.terminal.{strToChars, Console, Debugger, LineReader, TestTerminal}
 
 class CardSelectorSpec extends AnyWordSpec with Matchers {
   def initConsole(keys: List[Int]): (TestTerminal, LineReader[IO], Console[IO]) = {
@@ -18,6 +18,8 @@ class CardSelectorSpec extends AnyWordSpec with Matchers {
 
     (terminal, lineReader, console)
   }
+
+  def strToChars(s: String): List[Int] = s.toCharArray.map(_.toInt).toList
 
   def runIO[A](io: IO[A]): Id[A] = io.unsafeRunSync()
   val run: FunctionK[IO, Id] = FunctionK.lift[IO, Id](runIO)
