@@ -19,14 +19,14 @@ object MtgJsonDB {
 
       def findMatchingByName(fragment: String): F[List[CardAndSet]] =
         Applicative[F].pure(
-          allPrintings.values.toList
+          allPrintings.data.values.toList
             .map(set => set.cards.map(card => CardAndSet(card = card, set = set)))
             .flatten
             .filter(_.card.name.contains(fragment))
         )
 
       def findByNameAndSet(name: CardName, setId: SetId): F[Option[CardAndSet]] =
-        Applicative[F].pure(allPrintings.values.find(GSI.get(_) === setId).flatMap(findCardInSet(name)))
+        Applicative[F].pure(allPrintings.data.values.find(GSI.get(_) === setId).flatMap(findCardInSet(name)))
 
       private[this] def findCardInSet(name: CardName)(set: Set): Option[CardAndSet] =
         set.cards.find(_.name === name).map(card => CardAndSet(card = card, set = set))

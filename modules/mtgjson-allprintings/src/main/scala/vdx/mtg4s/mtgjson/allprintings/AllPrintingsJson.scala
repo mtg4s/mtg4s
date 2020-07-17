@@ -5,6 +5,8 @@ import scala.io.Source
 import cats.effect.Sync
 
 object AllPrintingsJson {
+  val version: String = "5.0.0+20200714"
+
   def string[F[_]: Sync]: F[String] =
-    Sync[F].delay(Source.fromResource("AllPrintings-4.6.3+20200518.json").mkString)
+    Sync[F].delay(Source.fromResource(s"AllPrintings-$version.json").mkString)
 }

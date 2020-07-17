@@ -1,1 +1,0 @@
-modules/mtgjson-allprintings/src/main/resources/AllPrintings-4.6.3+20200518.json filter=lfs diff=lfs merge=lfs -text

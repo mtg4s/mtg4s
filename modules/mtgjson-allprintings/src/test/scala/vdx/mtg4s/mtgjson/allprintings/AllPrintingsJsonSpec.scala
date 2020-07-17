@@ -18,7 +18,7 @@ class AllPrintingsJsonSpec extends AnyWordSpec with Matchers {
             .digest(str.getBytes)
             .map("%02x".format(_))
             .mkString should be(
-            "604a86372ca9cb3800613f7df7b111c66f1e2fcc6bb60a6a3fb2177dadb0b0d1"
+            "7b65ee9c9dd524ebaf48266c153a5e2d6e189396cbfbb73c6f0241ef2f120d10"
           )
         }
         .unsafeRunSync()

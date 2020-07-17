@@ -29,8 +29,9 @@ case class Card(
   hand: Option[String],
   hasFoil: Option[Boolean],
 // @deprecated()
-  hasNoDeckLimit: Option[Boolean],
+  hasAlternativeDeckLimit: Option[Boolean],
   hasNonFoil: Option[Boolean],
+  identifiers: Identifiers,
   isAlternative: Option[Boolean],
   isArena: Option[Boolean],
   isFullArt: Option[Boolean],
@@ -51,15 +52,7 @@ case class Card(
   life: Option[String],
   loyalty: Option[String],
   manaCost: Option[String], // This is not optional in the docs
-  mcmId: Option[Integer], // Not optional in the docs
-  mcmMetaId: Option[Integer], // Not optional in the docs
-  mtgArenaId: Option[Int],
-  mtgoFoilId: Option[Int],
-  mtgoId: Option[Int],
-  mtgstocksId: Option[Int], // This is not optional in the docs
-  multiverseId: Option[Int], // This is not optional in the docs
   name: String,
-  names: Option[List[String]], // This is not optional in the docs
   number: String,
   originalText: Option[String], // This is not optional in the docs
   originalType: Option[String], //  This is not optional in the docs
@@ -67,17 +60,14 @@ case class Card(
   power: Option[String], // This is not optional in the docs
   prices: Option[Prices], // This is not optional in the docs
   printings: List[String],
+//  promoTypes: PromoTypes,
   purchaseUrls: Option[PurchaseUrls], // This is not optional in the docs
   rarity: Rarity,
   reverseRelated: Option[List[String]],
   rulings: List[Ruling],
-  scryfallId: UUID,
-  scryfallOracleId: UUID,
-  scryfallIllustrationId: Option[UUID],
   side: Option[Side],
   subtypes: List[String],
   supertypes: List[String],
-  tcgplayerProductId: Option[Integer], // This is not optional in the docs
   text: Option[String], //  This is not optional in the docs
   toughness: Option[String], //  This is not optional in the docs
   `type`: String,
@@ -195,5 +185,7 @@ object Card {
     case object A extends Side
     case object B extends Side
     case object C extends Side
+    case object D extends Side
+    case object E extends Side
   }
 }

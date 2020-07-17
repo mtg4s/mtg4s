@@ -1,4 +1,4 @@
 target/
 
-
+modules/mtgjson-allprintings/src/main/resources/*.json
 AllPrintings.json

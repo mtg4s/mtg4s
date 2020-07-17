@@ -15,6 +15,7 @@ val catsEffectVersion = "2.1.2"
 val fs2Version = "2.3.0"
 val enumeratumVersion = "1.5.13"
 val enumeratumCirceVersion = "1.5.23"
+val http4sVersion = "0.21.5"
 val circeVersion = "0.13.0"
 val shapelessVersion = "2.3.3"
 val monocleVersion = "2.0.3"
@@ -110,6 +111,27 @@ lazy val `mtgjson-allprintings` = (project in file("modules/mtgjson-allprintings
     )
   )
 
+lazy val `mtgjson-allprintings-mirror` = (project in file("modules/mtgjson-allprintings/mirror"))
+  .settings(
+    name := "mtg4s-mtgjson-allprintings-mirror",
+    defaultSettings,
+    skip in publish := true,
+    libraryDependencies ++= Seq(
+      "org.typelevel"      %% "cats-core"           % catsVersion,
+      "org.typelevel"      %% "cats-effect"         % catsEffectVersion,
+      "com.gaborpihaj"     %% "fetch-file"          % "0.3.0",
+      "com.gaborpihaj"     %% "fetch-file-http4s"   % "0.3.0",
+      "org.http4s"         %% "http4s-dsl"          % http4sVersion,
+      "org.http4s"         %% "http4s-blaze-client" % http4sVersion,
+      "org.http4s"         %% "http4s-circe"        % http4sVersion,
+      "io.circe"           %% "circe-generic"       % "0.13.0",
+      "com.github.seratch" %% "awscala-s3"          % "0.8.4",
+      "co.fs2"             %% "fs2-core"            % fs2Version,
+      "co.fs2"             %% "fs2-io"              % fs2Version
+    )
+  )
+  .dependsOn(`mtgjson-allprintings`)
+
 lazy val `terminal-extras` = (project in file("modules/terminal"))
   .settings(
     name := "mtg4s-terminal-extras",
@@ -135,6 +157,7 @@ lazy val root = (project in file("."))
     inventory,
     mtgjson,
     `mtgjson-allprintings`,
+    `mtgjson-allprintings-mirror`,
     `terminal-extras`
   )
 

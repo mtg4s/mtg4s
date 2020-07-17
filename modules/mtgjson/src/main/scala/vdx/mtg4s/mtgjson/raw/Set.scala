@@ -10,7 +10,7 @@ import io.circe.generic.semiauto.deriveDecoder
 import vdx.mtg4s.mtgjson.raw.Set.SetType
 
 case class Set(
-  baseSetSize: Int,
+//  baseSetSize: Int,
   block: Option[String],
   // boosterV3: List[String], // ListStringOrString,
   cards: List[Card],
@@ -23,7 +23,7 @@ case class Set(
   keyruneCode: String,
   mcmName: Option[String], // This is not optional in the docs
   mcmId: Option[Integer], // This is not optional in the docs
-  meta: Map[String, String],
+//  meta: Map[String, String],
   mtgoCode: Option[String], // This is not optional in the docs
   name: String,
   parentCode: Option[String], // This is not optional in the docs
@@ -31,7 +31,7 @@ case class Set(
   tcgplayerGroupId: Option[Int], // This is not optional in the docs
   tokens: List[Token],
   totalSetSize: Int,
-  translations: Map[String, String],
+  translations: Map[String, Option[String]], // Set DDP doesn't have this
   `type`: SetType
 )
 
