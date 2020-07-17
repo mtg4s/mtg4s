@@ -163,3 +163,5 @@ lazy val root = (project in file("."))
 
 addCommandAlias("fmt", ";scalafix ;test:scalafix ;scalafmtAll ;scalafmtSbt")
 addCommandAlias("prePush", ";fmt ;clean ;reload ;test")
+addCommandAlias("update-mirror", "mtgjson-allprintings-mirror/runMain vdx.mtg4s.mtgjson.UpdateMirror")
+addCommandAlias("fetch-mtgjson", "mtgjson-allprintings-mirror/runMain vdx.mtg4s.mtgjson.FetchMirrored")
