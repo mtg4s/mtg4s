@@ -9,8 +9,8 @@ import cats.syntax.traverse._
 import kantan.csv._
 import kantan.csv.ops._
 import monocle.Getter
-import vdx.mtg4s.CardList.Card
 import vdx.mtg4s._
+import vdx.mtg4s.inventory.Inventory.PaperCard
 import vdx.mtg4s.inventory._
 import vdx.mtg4s.inventory.parser.Parser
 import vdx.mtg4s.inventory.parser.Parser._
@@ -27,30 +27,30 @@ object DeckboxCsvParser {
       Sync[F]
         .delay(raw.trim.asCsvReader[RawDeckboxCard](rfc.withHeader(true)))
         .flatMap(
-          _.foldLeft[Chain[F[ParserResult[Card[CardId]]]]](Chain.empty) { (chain, result) =>
+          _.foldLeft[Chain[F[ParserResult[PaperCard[CardId]]]]](Chain.empty) { (chain, result) =>
             // +1 because of the header and +1 because line numbering in messages is not zero based
             implicit val pos: Pos = Pos(chain.length + 2)
             chain ++ Chain.one(
               result.fold(
                 e =>
-                  errorResultF[F, Card[CardId]](
+                  errorResultF[F, PaperCard[CardId]](
                     ParsingError(s"Error parsing/decoding line ${pos.line}: ${e.toString}")
                   ),
                 item => findOrParsingError(CardName(item.name), SetName(item.edition), item.count)
               )
             )
           }.traverse(identity)
-            .map(_.traverse(identity).map(CardList(_)))
+            .map(_.traverse(identity).map(Inventory.apply))
         )
 
     private[this] def findOrParsingError(name: CardName, set: SetName, count: Int)(
       implicit pos: Pos
-    ): F[ParserResult[Card[CardId]]] =
+    ): F[ParserResult[PaperCard[CardId]]] =
       db.findByNameAndSet(name, set)
         .map(
           _.toRight(
             oneError(CardNotFoundError(s"Cannot find card in the database: ${name} (${set}) at line ${pos.line}"))
-          ).map(r => Card(G.get(r), count))
+          ).map(r => PaperCard(G.get(r), count, false))
         )
   }
 

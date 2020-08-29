@@ -15,6 +15,8 @@ import org.scalatestplus.scalacheck.Checkers
 import org.typelevel.claimant.Claim
 import vdx.mtg4s.TestCardDB.{defaultCards, Card}
 import vdx.mtg4s._
+import vdx.mtg4s.inventory.Inventory
+import vdx.mtg4s.inventory.Inventory.PaperCard
 import vdx.mtg4s.inventory.parser.Parser.{CardNotFoundError, ParsingError}
 import vdx.mtg4s.inventory.parser.deckbox.Generators._
 
@@ -74,8 +76,8 @@ class DeckboxCsvParserSpec extends AnyWordSpec with Matchers with Checkers {
           val cardFromDb = defaultCards(s"${row.name} - ${row.edition}")
 
           Claim(
-            parserResult.fold(errors => fail(s"Right value was expected but got Left: $errors"), identity) == CardList(
-              Chain.one(CardList.Card(cardFromDb.id, row.count))
+            parserResult.fold(errors => fail(s"Right value was expected but got Left: $errors"), identity) == Inventory(
+              Chain.one(PaperCard(cardFromDb.id, row.count, false))
             )
           )
         }

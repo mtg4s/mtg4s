@@ -27,7 +27,7 @@ class CardSelectorSpec extends AnyWordSpec with Matchers {
   "CardSelector" when {
     "there's a single match" should {
       "return the matching card" in {
-        val (_, _, console) = initConsole(strToChars("Lightning") ++ List(9, 13))
+        val (_, _, console) = initConsole(strToChars("lightning") ++ List(9, 13))
 
         implicit val c: Console[IO] = console
 
@@ -40,7 +40,7 @@ class CardSelectorSpec extends AnyWordSpec with Matchers {
 
     "there are multiple matches" should {
       "return the first match by default" in {
-        val (_, _, console) = initConsole(strToChars("Primeval") ++ List(9, 13))
+        val (_, _, console) = initConsole(strToChars("primeval") ++ List(9, 13))
 
         implicit val c: Console[IO] = console
 

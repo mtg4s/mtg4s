@@ -60,7 +60,7 @@ case class Card(
   power: Option[String], // This is not optional in the docs
   prices: Option[Prices], // This is not optional in the docs
   printings: List[String],
-//  promoTypes: PromoTypes,
+  promoTypes: Option[List[String]], // TODO: this should be a proper ENUM
   purchaseUrls: Option[PurchaseUrls], // This is not optional in the docs
   rarity: Rarity,
   reverseRelated: Option[List[String]],

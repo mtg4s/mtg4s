@@ -22,7 +22,7 @@ object MtgJsonDB {
           allPrintings.data.values.toList
             .map(set => set.cards.map(card => CardAndSet(card = card, set = set)))
             .flatten
-            .filter(_.card.name.contains(fragment))
+            .filter(_.card.name.toLowerCase().contains(fragment.toLowerCase()))
         )
 
       def findByNameAndSet(name: CardName, setId: SetId): F[Option[CardAndSet]] =
