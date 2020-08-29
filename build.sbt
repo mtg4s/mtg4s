@@ -21,7 +21,7 @@ val shapelessVersion = "2.3.3"
 val monocleVersion = "2.0.3"
 val kantanCsvVersion = "0.6.0"
 val jlineVersion = "3.14.0"
-val console4sVersion = "0.0.0+2-13a4d433+20200715-2149-SNAPSHOT"
+val console4sVersion = "0.1.0"
 
 val scalatestVersion = "3.1.1"
 val scalatestScalacheckVersion = "3.1.1.1"
