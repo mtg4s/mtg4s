@@ -4,8 +4,7 @@ import cats.kernel.Eq
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.{~>, Id, Monad, Show}
-import com.gaborpihaj.console4s.AutoCompletionConfig._
-import com.gaborpihaj.console4s.Console
+import com.gaborpihaj.console4s.{AutoCompletion, Console}
 import monocle.Getter
 import vdx.mtg4s.{CardDB, CardName}
 
@@ -18,11 +17,14 @@ object CardSelector {
     new CardSelector[F, Repr] {
       def run[SetId](cardDb: CardDB[F, Repr, SetId]): F[Option[Repr]] = {
         val console = Console[F]
-        val acSource = CardNameAutoCompletionSource[F, Repr, SetId](cardDb, tf)
+        val autoCompletion = AutoCompletion(
+          source = CardNameAutoCompletionSource[F, Repr, SetId](cardDb, tf),
+          config = AutoCompletion.defaultAutoCompletionConfig
+        )
         for {
           _      <- console.clearScreen()
           _      <- console.moveToLastLine()
-          result <- console.readLine("Card name: ", acSource)
+          result <- console.readLine("Card name: ", autoCompletion)
         } yield result._2
 
       }
