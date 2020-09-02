@@ -75,7 +75,7 @@ lazy val inventory = (project in file("modules/inventory"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val mtgjson = (project in file("modules/mtgjson"))
+lazy val mtgjson: Project = (project in file("modules/mtgjson"))
   .settings(
     name := "mtg4s-mtgjson",
     publishSettings,
@@ -156,8 +156,6 @@ lazy val root = (project in file("."))
     core,
     inventory,
     mtgjson,
-    `mtgjson-allprintings`,
-    `mtgjson-allprintings-mirror`,
     `terminal-extras`
   )
 
